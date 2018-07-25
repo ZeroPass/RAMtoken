@@ -2,9 +2,11 @@
 #include <eosiolib/transaction.hpp>
 #include <eosiolib/crypto.h>
 
-#include "../index_queue.hpp"
+#include "../../index_queue.hpp"
+
 
 using namespace eosio;
+
 
 class queue_test : public eosio::contract 
 {
@@ -183,7 +185,7 @@ public:
             print_f("[ord_idx:% key:% val: %]\n", it.internal_idx(), it->key, it->value);
         }
     }
-    
+
     /// @abi action
     void runtests(account_name payer)
     { 
