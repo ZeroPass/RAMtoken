@@ -3,5 +3,7 @@
 *.wasm
 *.wast
 
+*.json
+
 # VisualCode
 *.vscode
