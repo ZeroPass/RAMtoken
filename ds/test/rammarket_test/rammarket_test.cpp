@@ -23,8 +23,15 @@ struct rammarket_test : public eosio::contract
         print_f("Current RAM price: %/KiB\n", price);
     }
 
+    // @abi action
+    void getpriceof(uint64_t amount)
+    {
+        auto price = m_rm.get_ramprice();
+        print_f("%KiB of RAM would cost: %\n", amount, price * amount);
+    }
+
     private:
         ram_market m_rm;
 };
 
-EOSIO_ABI( rammarket_test, (printramstate)(ramprice) );
+EOSIO_ABI( rammarket_test, (printramstate)(ramprice)(getpriceof) );
