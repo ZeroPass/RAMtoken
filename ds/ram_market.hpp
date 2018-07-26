@@ -22,9 +22,11 @@ namespace eosio {
         asset get_ramprice() const
         {
             auto s = get_exchange_state();
-            auto quote_balance = s.quote.balance * 1024;
-            quote_balance /= s.base.balance.amount;
-            return quote_balance;
+            auto ramprice = s.quote.balance * 1024; // Calculate balance for 1 KiB
+            ramprice /= s.base.balance.amount;
+
+            eosio_assert(ramprice.is_valid(), "Could not calculate valid RAM price!");
+            return ramprice;
         }
 
     private:
