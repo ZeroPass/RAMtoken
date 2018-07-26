@@ -1,0 +1,9 @@
+# Compiled Object files
+*.abi
+*.wasm
+*.wast
+
+*.json
+
+# VisualCode
+*.vscode
