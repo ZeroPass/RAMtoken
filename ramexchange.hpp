@@ -76,6 +76,9 @@ namespace exchange {
 			Offer* getFromSellQueue();
 			//remove an item from queue - return false if it was not removed and vice versa
 			bool removeFromQueue(account_name account);
+			
+			bool popFromBuyQueue();
+			bool popFromSellQueue();
 	
 	};
 	EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdrawEOS)(withdrawRAM)(getvolume)(dotransfer));

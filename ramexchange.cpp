@@ -18,6 +18,11 @@ static void transferToken(const account_name from, const account_name to, const 
 	std::make_tuple(from, to, amount, memo))
     .send();
 }
+
+static double getLiveValue()
+{
+	return 0.33;
+}
 	
 void ramexchange::buy (account_name from, eosio::asset value, uint32_t ttl, bool forceSell)
 {
@@ -107,7 +112,17 @@ void ramexchange::dotransfer()
 	while(buyLadder.size() > 0)
 	{
 		auto buyItem = getFromBuyQueue();
-		auto sellItem = getFromSellQueue();
+		eosio_assert(buyItem.value == 0, "Unvalid value (zero)" );
+		
+		while ( buyItem.value > 0.0 )
+		{
+			auto sellItem = getFromSellQueue();
+			eosio_assert(sellItem.value == 0, "Unvalid value (zero)" );
+			double currentPrice = getLiveValue()
+			
+		}
+		
+	
 		
 	}
 }
@@ -139,6 +154,16 @@ ramexchange::Offer* ramexchange::getFromSellQueue()
 }
 
 bool ramexchange::removeFromQueue(account_name account)
+{
+	return false;
+}
+
+bool ramexchange::popFromBuyQueue()
+{
+	return false;
+}
+
+bool ramexchange:popFromSellQueue()
 {
 	return false;
 }
