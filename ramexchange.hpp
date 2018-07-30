@@ -5,6 +5,8 @@
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/public_key.hpp>
 #include <eosiolib/print.hpp>
+#include "ds/ram_market.hpp"
+#include "ds/index_queue.hpp"
 
 #include <string>
 #include <queue>
@@ -29,30 +31,59 @@ namespace exchange {
 			void getvalue();
 			//withdraw expired EOS tokens
 			//@abi action
-			void withdrawEOS(account_name to);
+			void withdraw_eos(account_name to);
 			//withdraw expired RAM tokens
 			//@abi action
-			void withdrawRAM(account_name to);
+			void withdraw_ram(account_name to);
 			//get current account volume
 			//@abi action
 			void getvolume();
-			//do transaction - merge matches, remove entries with expired TTL - it the future it goes to the private
+			//do transaction - merge matches - it the future it goes to the private
 			//@abi action
 			void dotransfer();
+			//remove entries with expired TTL - if needed buy/sell ram on EOS market
+			//@abi action
+			void doCleaning();
 			
 			
 		private:
+			eosio::ram_market rm;
 			
 			//@abi table
 			struct Offer {
-				account_name supply;
+				uint64_t key;
+				account_name account;
 				eosio::asset value;
 				uint32_t ttl;
 				bool forced;
-
-				EOSLIB_SERIALIZE(Offer, (supply)(value)(ttl)(forced))
+				
+				constexpr bool operator == (const Offer& qv) const { 
+					return account == qv.account && value == qv.value;
+				}
+				constexpr bool operator != (const Offer& qv) { return !(*this == qv); }
+				uint64_t get_key() const { return key; }
+				static uint64_t calculate_key(account_name account, uint64_t timestamp)
+				{
+					//TODO: implement that function will combine account and timestamp and then make hash of them together
+					return timestamp;
+				}
+				
+				EOSLIB_SERIALIZE(Offer, (account)(value)(ttl)(forced))
 			};
 			
+			
+			static constexpr uint64_t index_key = N("key");
+			typedef eosio::index_queue<N(ladder),
+				Offer, 
+				eosio::indexed_by<index_key, eosio::const_mem_fun<Offer, uint64_t, &Offer::get_key>>
+				> Ladder;
+				
+			//Ladder ladderBuy;
+			//Ladder ladderSell;
+				
+			eosio::asset getLiveValue();
+			eosio::asset getMinimum(eosio::asset a, eosio::asset b);
+			eosio::asset getAmonutOfRamTokens(eosio::asset a, eosio::asset price);
 			
 			//just temp queue structure
 			std::queue<Offer> buyLadder;
@@ -66,14 +97,12 @@ namespace exchange {
 			*/
 			//add item to the queue
 			void addToQueue(Offer item, std::queue<Offer> queue);
-			//iterate through queue and return found item (Offer is search key)
-			Offer findInQueue(Offer offer);
 			//iterate through queue and return found item (Account key is search key)
-			Offer findInQueue(account_name acc);
+			Offer findInQueue(std::queue<Offer> queue, account_name acc);
 			//get element (FIFO rules)
-			Offer* getFromBuyQueue();
+			Offer getFromBuyQueue();
 			//get element (FIFO rules)
-			Offer* getFromSellQueue();
+			Offer getFromSellQueue();
 			//remove an item from queue - return false if it was not removed and vice versa
 			bool removeFromQueue(account_name account);
 			
@@ -81,5 +110,5 @@ namespace exchange {
 			bool popFromSellQueue();
 	
 	};
-	EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdrawEOS)(withdrawRAM)(getvolume)(dotransfer));
+	EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdraw_eos)(withdraw_ram)(getvolume)(dotransfer));
 } // exchange
