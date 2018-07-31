@@ -34,7 +34,7 @@ namespace exchange {
             void withdraweos(account_name to);
             //withdraw expired RAM tokens
             //@abi action
-            void withdraw_ram(account_name to);
+            void withdrawram(account_name to);
             //get current account volume
             //@abi action
             void getvolume();
@@ -43,7 +43,7 @@ namespace exchange {
             void dotransfer();
             //remove entries with expired TTL - if needed buy/sell ram on EOS market
             //@abi action
-            void doCleaning();
+            void sweep();
             
             
         private:
@@ -110,5 +110,5 @@ namespace exchange {
             bool popFromSellQueue();
 
     };
-    EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdraweos)(withdraw_ram)(getvolume)(dotransfer));
+    EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdraweos)(withdrawram)(getvolume)(dotransfer));
 } // exchange

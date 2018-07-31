@@ -104,7 +104,7 @@ void ramexchange::withdraweos(account_name to)
     transferToken(_self, to, asset(1), "EOS transfered to the RAMEXCHANGE smart contract.");
 }
 
-void ramexchange::withdraw_ram(account_name to)
+void ramexchange::withdrawram(account_name to)
 {
     
 }
@@ -159,7 +159,7 @@ void ramexchange::dotransfer()
     }
 }
 
-void ramexchange::doCleaning()
+void ramexchange::sweep()
 {
     //TODO: iterate through RAM and call system buy/sell ram if needed
     //if Offer::forced is true...if it is false then return asset to user
