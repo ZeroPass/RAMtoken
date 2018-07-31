@@ -1,10 +1,11 @@
-#include "ramexchange.hpp"
+#include "eosram.exchange.hpp"
 
 using namespace eosio;
 using namespace std;
-using namespace exchange;
+using namespace eosram;
 
-ramexchange::ramexchange(account_name self) : 
+
+exchange::exchange(account_name self) : 
     contract(self)
 {}
 
@@ -27,12 +28,12 @@ static void sellRam(const account_name account, const uint64_t bytes)
     //TODO: sellRam function
 }
 
-asset ramexchange::getLiveValue()
+asset exchange::getLiveValue()
 {
     return this->rm.get_ramprice();
 }
     
-void ramexchange::buy (account_name from, eosio::asset value, uint32_t ttl, bool forceSell)
+void exchange::buy (account_name from, eosio::asset value, uint32_t ttl, bool forceSell)
 {
     require_auth(from);
     
@@ -56,7 +57,7 @@ void ramexchange::buy (account_name from, eosio::asset value, uint32_t ttl, bool
     
 }
 
-void ramexchange::sell (account_name from, eosio::asset value, uint32_t ttl, bool forceSell)
+void exchange::sell (account_name from, eosio::asset value, uint32_t ttl, bool forceSell)
 {
     require_auth(from);
     
@@ -80,7 +81,7 @@ void ramexchange::sell (account_name from, eosio::asset value, uint32_t ttl, boo
 }
 
 
-void ramexchange::getvalue()
+void exchange::getvalue()
 {
     //i use this function to test snipets
     eosio::print(current_time());
@@ -91,7 +92,7 @@ void ramexchange::getvalue()
     eosio::print( "Current RAM price: ", bula133 );
 }
 
-void ramexchange::withdraweos(account_name to)
+void exchange::withdraweos(account_name to)
 {
     require_auth(to);
     
@@ -104,18 +105,18 @@ void ramexchange::withdraweos(account_name to)
     transferToken(_self, to, asset(1), "EOS transfered to the RAMEXCHANGE smart contract.");
 }
 
-void ramexchange::withdrawram(account_name to)
+void exchange::withdrawram(account_name to)
 {
     
 }
 
-void ramexchange::getvolume()
+void exchange::getvolume()
 {
     
 }
 
 //runs every minute
-void ramexchange::dotransfer()
+void exchange::dotransfer()
 {
     //if one or both sides are empty
     if (buyLadder.size() == 0 || sellLadder.size() == 0)
@@ -159,7 +160,7 @@ void ramexchange::dotransfer()
     }
 }
 
-void ramexchange::sweep()
+void exchange::sweep()
 {
     //TODO: iterate through RAM and call system buy/sell ram if needed
     //if Offer::forced is true...if it is false then return asset to user
@@ -167,13 +168,13 @@ void ramexchange::sweep()
 }
 
 
-asset ramexchange::getMinimum(asset a, asset b)
+asset exchange::getMinimum(asset a, asset b)
 {
     return (a < b ? a : b);
 }
 
 
-asset ramexchange::getAmonutOfRamTokens(asset a, asset price)
+asset exchange::getAmonutOfRamTokens(asset a, asset price)
 {
     //at the end we need to multiplicate with 1024 to get B ( from KiB )
     //we multiplicate with 1000 becuase or token has 3 decimal places
@@ -186,44 +187,44 @@ asset ramexchange::getAmonutOfRamTokens(asset a, asset price)
 *
 */
 
-void ramexchange::addToQueue(Offer item, std::queue<ramexchange::Offer> queue)
+void exchange::addToQueue(Offer item, std::queue<exchange::Offer> queue)
 {
     //TODO:implement compatible to index_queue
 }
             
-ramexchange::Offer ramexchange::findInQueue(std::queue<ramexchange::Offer> queue, account_name acc)
+exchange::Offer exchange::findInQueue(std::queue<exchange::Offer> queue, account_name acc)
 {
     //TODO:implement compatible to index_queue
-    return ramexchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
+    return exchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
 }
 
-ramexchange::Offer ramexchange::getFromBuyQueue()
-{
-    //TODO:implement compatible to index_queue
-    account_name acc = N('bula');
-    return ramexchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
-}
-
-ramexchange::Offer ramexchange::getFromSellQueue()
+exchange::Offer exchange::getFromBuyQueue()
 {
     //TODO:implement compatible to index_queue
     account_name acc = N('bula');
-    return ramexchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
+    return exchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
 }
 
-bool ramexchange::removeFromQueue(account_name account)
+exchange::Offer exchange::getFromSellQueue()
+{
+    //TODO:implement compatible to index_queue
+    account_name acc = N('bula');
+    return exchange::Offer{ Offer::calculate_key(acc, current_time()), acc, asset(1), 0, false};
+}
+
+bool exchange::removeFromQueue(account_name account)
 {
     //TODO:implement compatible to index_queue
     return false;
 }
 
-bool ramexchange::popFromBuyQueue()
+bool exchange::popFromBuyQueue()
 {
     //TODO:implement compatible to index_queue
     return false;
 }
 
-bool ramexchange::popFromSellQueue()
+bool exchange::popFromSellQueue()
 {
     //TODO:implement compatible to index_queue
     return false;

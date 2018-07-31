@@ -13,11 +13,11 @@
 
 #define tokenSym "RAM"
 
-namespace exchange {
-    class ramexchange : public eosio::contract
+namespace eosram {
+    class exchange : public eosio::contract
     {
         public:
-            ramexchange(account_name self);
+            exchange(account_name self);
             
             //buy RAM token
             //if ttl is 0(zero) we wont remove order from queue (if you want to get your tokens back, just call withdraw)
@@ -110,5 +110,5 @@ namespace exchange {
             bool popFromSellQueue();
 
     };
-    EOSIO_ABI( ramexchange, (buy)(sell)(getvalue)(withdraweos)(withdrawram)(getvolume)(dotransfer));
-} // exchange
+    EOSIO_ABI( exchange, (buy)(sell)(getvalue)(withdraweos)(withdrawram)(getvolume)(dotransfer));
+} // eosram
