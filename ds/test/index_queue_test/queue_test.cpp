@@ -105,6 +105,22 @@ public:
     }
 
     /// @abi action
+    void modify(uint64_t key, int32_t n)
+    {
+        auto it = m_q.find<index_key>(key);
+        if(it != m_q.end())
+        {
+            auto v = *it;
+            v.value = n;
+            m_q.modify(it, std::move(v), /*payer=*/_self);
+        } 
+        else {
+            ::print("Key not found!\n");
+        }
+    }
+
+
+    /// @abi action
     void remove(uint64_t key)
     {
         auto it = m_q.find<index_key>(key);
@@ -189,6 +205,7 @@ public:
     /// @abi action
     void runtests(account_name payer)
     { 
+        require_auth(payer);
         eosio_assert(m_q.empty(), "Queue must be empty in order to run the tests!");
 
         queue_value qv1 { 1,      62651      };
@@ -296,6 +313,31 @@ public:
         eosio_assert(m_q.contains<index_key>(qv5.key), "m_q.contains<index_key>(qv5.key)");
         eosio_assert(*qv5_it == qv5                  , "*qv5_it == qv5");
         eosio_assert(qv5_it.internal_idx() == 4      , "qv5_it.internal_idx() == 4");
+
+        // Modify top
+        qv1.value = 99875911;
+        m_q.modify(m_q.top(), qv1, payer);
+        qv1_it = m_q.find<index_key>(qv1.key);
+        eosio_assert(qv1_it != m_q.end()        , "qv1_it != m_q.end()");
+        eosio_assert(*qv1_it == qv1             , "*qv1_it == qv1");
+        eosio_assert(*m_q.top() == qv1          , "*m_q.top() == qv1");
+        eosio_assert(qv1_it.internal_idx() == 0 , "qv1_it.internal_idx() == 0");
+
+        // Modify qv2
+        qv2.value = 3326677;
+        m_q.modify(qv2_it, qv2, payer);
+        qv2_it = m_q.find<index_key>(qv2.key);
+        eosio_assert(qv2_it != m_q.end()        , "qv2_it != m_q.end()");
+        eosio_assert(*qv2_it == qv2             , "*qv2_it == qv2");
+        eosio_assert(qv2_it.internal_idx() == 1 , "qv2_it.internal_idx() == 1");
+
+        // Modify qv5
+        qv5.value = 1;
+        m_q.modify(qv5_it, qv5, payer);
+        qv5_it = m_q.find<index_key>(qv5.key);
+        eosio_assert(qv5_it != m_q.end()        , "qv5_it != m_q.end()");
+        eosio_assert(*qv5_it == qv5             , "*qv5_it == qv5");
+        eosio_assert(qv5_it.internal_idx() == 4 , "qv5_it.internal_idx() == 4");
 
         // remove top element
         auto opt = m_q.pop();
@@ -432,4 +474,4 @@ private:
     q_t m_q;
 };
 
-EOSIO_ABI( queue_test, (push)(pop)(top)(bottom)(fill)(remove)(clear)(clearrange)(printkey)(printtop)(printrange)(runtests)(onerror) )
+EOSIO_ABI( queue_test, (push)(pop)(top)(bottom)(fill)(modify)(remove)(clear)(clearrange)(printkey)(printtop)(printrange)(runtests)(onerror) )

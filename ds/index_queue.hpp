@@ -1,4 +1,5 @@
 #include <eosiolib/eosio.hpp>
+#include <eosiolib/multi_index.hpp>
 #include <eosiolib/optional.hpp>
 
 #include <limits>
@@ -22,6 +23,7 @@ namespace eosio {
         };
         using qi_t = multi_index<QueueName, qe_t, Indices...>;
         static constexpr auto max_idx = std::numeric_limits<uint64_t>::max() - 1;
+
     public:
         struct const_iterator : public std::iterator<std::bidirectional_iterator_tag, const ValueType> 
         {
@@ -156,6 +158,14 @@ namespace eosio {
             auto rit = qi_.erase(it);
             eosio_assert(it.get_underlying_it() != qi_.end(), "Queue element was not erased properly!");
             return rit;
+        }
+
+        void modify(const_iterator it, ValueType value, account_name payer) 
+        {
+            eosio_assert(it != end(), "Cannot modify index_queue element, invalid iterator!");
+            qi_.modify(it, payer, [&](auto& qe) {
+                qe.v = std::move(value);
+            });
         }
 
         optional<ValueType> pop()
