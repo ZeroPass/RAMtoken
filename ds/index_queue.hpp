@@ -150,7 +150,7 @@ namespace eosio {
         template<typename ...Args>
         void emplace(account_name payer, Args&& ... args) 
         {
-            push(payer, ValueType{std::forward<Args>(args)...});
+            push(ValueType{std::forward<Args>(args)...}, payer);
         }
 
         const_iterator erase(const_iterator it)
@@ -181,7 +181,7 @@ namespace eosio {
             return v;
         }
 
-        void push(account_name payer, ValueType value)
+        void push(ValueType value, account_name payer)
         {
             uint64_t idx = 0;
             auto it = qi_.rbegin();

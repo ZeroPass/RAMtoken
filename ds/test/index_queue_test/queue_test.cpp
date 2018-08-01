@@ -40,7 +40,7 @@ public:
     {
         uint64_t seed = expiration() + tapos_block_num();
         queue_value qv { get_random_key(seed), n };
-        m_q.push(/*payer=*/get_self(), std::move(qv));
+        m_q.push(std::move(qv), /*payer=*/get_self());
 
         eosio_assert((--m_q.end())->value == n, "Failed to add element at the end of the queue!");
         print_f("Number: % was inserted into queue", n);
@@ -215,10 +215,10 @@ public:
         queue_value qv5 { 120654, 0          };
 
         // Fill queue
-        m_q.push(payer, qv1);
-        m_q.push(payer, qv2);
-        m_q.push(payer, qv3);
-        m_q.push(payer, qv4);
+        m_q.push(qv1, payer);
+        m_q.push(qv2, payer);
+        m_q.push(qv3, payer);
+        m_q.push(qv4, payer);
         m_q.emplace(payer, qv5.key, qv5.value);
 
         // Iterate through queue
@@ -363,7 +363,7 @@ public:
 
         // Add qv6
         queue_value qv6 { 985798, 1264257};
-        m_q.push(payer, qv6);
+        m_q.push(qv6, payer);
         eosio_assert(*m_q.top() == qv2, "*m_q.top() == qv2");
         eosio_assert(*(--m_q.end()) == qv6, "*(--m_q.end()) == qv6");
 
@@ -391,7 +391,7 @@ public:
 
         // Add qv7
         queue_value qv7 { 325, 652674};
-        m_q.push(payer, qv7);
+        m_q.push(qv7, payer);
         eosio_assert(*m_q.top() == qv3    , "*m_q.top() == qv3");
         eosio_assert(*(--m_q.end()) == qv7, "*(--m_q.end()) == qv7");
 
