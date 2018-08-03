@@ -4,6 +4,28 @@
 
 namespace eosio {
 
+    /* Struct defines kibibyte unit */
+    struct kibyte
+    {
+        constexpr explicit kibyte(uint64_t v) : value(v)
+        {
+            eosio_assert(v <= UINT32_MAX / 1024UL, "Too big value for KiB unit!");
+        }
+
+        uint32_t value = 0;
+        uint32_t to_bytes() const
+        {
+            return value * 1024UL;
+        }
+    };
+
+    // kibyte literal
+    constexpr kibyte operator"" _KiB (unsigned long long value)
+    {
+        return kibyte(value);
+    }
+
+
     class ram_market
     {
     public:
