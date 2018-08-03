@@ -1,6 +1,7 @@
 #pragma once
 #include <eosiolib/eosio.hpp>
 #include <eosio.system/exchange_state.hpp>
+#include <eosio.system/eosio.system.hpp>
 
 namespace eosio {
 
@@ -28,16 +29,17 @@ namespace eosio {
 
     class ram_market
     {
+        using rm_t = eosiosystem::rammarket;
     public:
         ram_market() :
-            rm_(N(eosio), N(eosio))
-        {}
+            m_(N(eosio), N(eosio))
+        {
+            eosio_assert(get_marget_it() != m_.end(), "Could not find rammarket!");
+        }
 
         eosiosystem::exchange_state get_exchange_state() const
         {
-            auto it = rm_.begin();
-            eosio_assert(it != rm_.end(), "Could not get ram excgange state!");
-            return *it;
+            return *get_marget_it();
         }
 
         /** Rerurns RAM price per KiB in EOS */
@@ -51,7 +53,25 @@ namespace eosio {
             return ramprice;
         }
 
+        static void buyram(account_name buyer, account_name receiver, kibyte quantity)
+        {
+            buyrambytes(buyer, receiver, quantity.to_bytes());
+        }
+
+        static void buyrambytes(account_name buyer, account_name receiver, uint32_t bytes)
+        {
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, buyrambytes)(
+                N(eosio), {{buyer, N(active)}}, {buyer, receiver, bytes}
+            );
+        }
+
     private:
-        eosiosystem::rammarket rm_;
+        rm_t::const_iterator get_marget_it() const 
+        {
+            return m_.find(S(4, RAMCORE));
+        }
+
+    private:
+        rm_t m_;
     };
 }
