@@ -24,14 +24,35 @@ struct rammarket_test : public eosio::contract
     }
 
     // @abi action
-    void getpriceof(uint64_t amount)
+    void getpriceof(uint32_t amount)
     {
         auto price = m_rm.get_ramprice();
         print_f("%KiB of RAM would cost: %\n", amount, price * amount);
+    }
+
+    // @abi action
+    void buyram(account_name buyer, uint32_t quantity)
+    {
+        require_auth(buyer);
+        m_rm.buyram(buyer, buyer, kibyte(quantity));
+    }
+
+    // @abi action
+    void buyramfor(account_name buyer, account_name recipient, uint32_t quantity)
+    {
+        require_auth(buyer);
+        m_rm.buyram(buyer, recipient, kibyte(quantity));
+    }
+
+    // @abi action
+    void sellram(account_name seller, uint32_t quantity)
+    {
+        require_auth(seller);
+        m_rm.sellram(seller, kibyte(quantity));
     }
 
     private:
         ram_market m_rm;
 };
 
-EOSIO_ABI( rammarket_test, (printramstate)(ramprice)(getpriceof) );
+EOSIO_ABI( rammarket_test, (printramstate)(ramprice)(getpriceof)(buyram)(buyramfor)(sellram) );

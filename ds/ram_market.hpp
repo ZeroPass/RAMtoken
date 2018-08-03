@@ -10,7 +10,7 @@ namespace eosio {
     {
         constexpr explicit kibyte(uint64_t v) : value(v)
         {
-            eosio_assert(v <= UINT32_MAX / 1024UL, "Too big value for KiB unit!");
+            eosio_assert(v <= UINT32_MAX / 1024UL, "kibyte: Too big value for KiB unit!");
         }
 
         uint32_t value = 0;
@@ -34,7 +34,7 @@ namespace eosio {
         ram_market() :
             m_(N(eosio), N(eosio))
         {
-            eosio_assert(get_marget_it() != m_.end(), "Could not find rammarket!");
+            eosio_assert(get_marget_it() != m_.end(), "ram_market: Could not find eosio rammarket!");
         }
 
         eosiosystem::exchange_state get_exchange_state() const
@@ -49,7 +49,7 @@ namespace eosio {
             auto ramprice = s.quote.balance * 1024; // Calculate balance for 1 KiB
             ramprice /= s.base.balance.amount;
 
-            eosio_assert(ramprice.is_valid(), "Could not calculate valid RAM price!");
+            eosio_assert(ramprice.is_valid(), "ram_market::get_ramprice: Could not calculate valid RAM price!");
             return ramprice;
         }
 
@@ -62,6 +62,18 @@ namespace eosio {
         {
             INLINE_ACTION_SENDER(eosiosystem::system_contract, buyrambytes)(
                 N(eosio), {{buyer, N(active)}}, {buyer, receiver, bytes}
+            );
+        }
+
+        static void sellram(account_name seller, kibyte quantity)
+        {
+            sellrambytes(seller, quantity.to_bytes());
+        }
+
+        static void sellrambytes(account_name seller, uint32_t bytes)
+        {
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, sellram)(
+                N(eosio), {{seller, N(active)}}, {seller, bytes}
             );
         }
 
