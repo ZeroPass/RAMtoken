@@ -1,7 +1,7 @@
 #pragma once
 #include <eosiolib/eosio.hpp>
-#include <eosio.system/exchange_state.hpp>
 #include <eosio.system/eosio.system.hpp>
+#include "ram_exchange_state.cpp"
 
 namespace eosio {
 
@@ -29,23 +29,22 @@ namespace eosio {
 
     class ram_market
     {
-        using rm_t = eosiosystem::rammarket;
     public:
         ram_market() :
             m_(N(eosio), N(eosio))
-        {
-            eosio_assert(get_marget_it() != m_.end(), "ram_market: Could not find eosio rammarket!");
-        }
+        {}
 
-        eosiosystem::exchange_state get_exchange_state() const
+        const eosiosystem::exchange_state& get_state() const
         {
-            return *get_marget_it();
+            auto it = m_.find(S(4, RAMCORE));;
+            eosio_assert(it != m_.end(), "ram_market: Could not find eosiosystem rammarket!");
+            return *it;
         }
 
         /** Rerurns RAM price per KiB in EOS */
         asset get_ramprice() const
         {
-            auto s = get_exchange_state();
+            auto& s = get_state();
             auto ramprice = s.quote.balance * 1024; // Calculate balance for 1 KiB
             ramprice /= s.base.balance.amount;
 
@@ -53,9 +52,23 @@ namespace eosio {
             return ramprice;
         }
 
-        static void buyram(account_name buyer, account_name receiver, kibyte quantity)
+        asset convert_to_eos(asset from_ram) const
         {
-            buyrambytes(buyer, receiver, quantity.to_bytes());
+            auto tmp = get_state();
+            return tmp.convert(from_ram, CORE_SYMBOL);
+        }
+
+        asset convert_to_ram(asset from_eos) const
+        {
+            auto tmp = get_state();
+            return tmp.convert(from_eos, S(0, RAM));
+        }
+
+        static void buyram(account_name buyer, account_name receiver, asset eos_quantity)
+        {
+            INLINE_ACTION_SENDER(eosiosystem::system_contract, buyram)(
+                N(eosio), {{buyer, N(active)}}, {buyer, receiver, eos_quantity}
+            );
         }
 
         static void buyrambytes(account_name buyer, account_name receiver, uint32_t bytes)
@@ -78,12 +91,6 @@ namespace eosio {
         }
 
     private:
-        rm_t::const_iterator get_marget_it() const 
-        {
-            return m_.find(S(4, RAMCORE));
-        }
-
-    private:
-        rm_t m_;
+        eosiosystem::rammarket m_;
     };
 }
