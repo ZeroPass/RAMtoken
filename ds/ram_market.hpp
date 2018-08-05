@@ -44,7 +44,7 @@ namespace eosio {
         /** Rerurns RAM price per KiB in EOS */
         asset get_ramprice() const
         {
-            auto& s = get_state();
+            const auto& s = get_state();
             auto ramprice = s.quote.balance * 1024; // Calculate balance for 1 KiB
             ramprice /= s.base.balance.amount;
 
