@@ -44,13 +44,15 @@ namespace eosram {
         inline asset get_balance(account_name owner, symbol_name sym) const;
 
     private:
+        // @abi table accounts i64
         struct account
         {
             asset    balance;
             uint64_t primary_key() const { return balance.symbol.name(); }
         };
 
-        struct currency_stats
+        // @abi table stat i64
+        struct currency_stat
         {
             asset          supply;
             asset          max_supply;
@@ -60,7 +62,7 @@ namespace eosram {
         };
 
         typedef eosio::multi_index<N(accounts), account> accounts;
-        typedef eosio::multi_index<N(stat), currency_stats> stats;
+        typedef eosio::multi_index<N(stat), currency_stat> stats;
 
         void create_token(account_name issuer, asset maximum_supply);
         void signup_account(account_name owner, asset quantity);
