@@ -23,7 +23,7 @@ namespace eosio {
             uint64_t primary_key() const { return idx; }
             EOSLIB_SERIALIZE(qe_t, (idx)(v));
         };
-        using qi_t = multi_index<QueueName, qe_t, Indices...>;
+        using q_t = multi_index<QueueName, qe_t, Indices...>;
         static constexpr auto max_idx = std::numeric_limits<uint64_t>::max() - 1;
 
     public:
@@ -81,7 +81,7 @@ namespace eosio {
             }
 
         private:
-            using qi_it_t = typename qi_t::const_iterator;
+            using qi_it_t = typename q_t::const_iterator;
             const_iterator(qi_it_t it) : 
                 it_(std::move(it)) 
             {}
@@ -205,6 +205,6 @@ namespace eosio {
         }
 
     private:
-        qi_t qi_;
+        q_t qi_;
     };
 }
