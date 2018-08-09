@@ -10,13 +10,13 @@ constexpr int64_t init_max_supply = 100000000000000;
 
 symbol_type token::symbol()
 {
-    static auto sym = EOSRAM_SYMBOL;
+    static auto sym = RAM_SYMBOL;
     return sym;
 }
 
 void token::create(account_name issuer)
 {
-    create_token(issuer, asset(init_max_supply, EOSRAM_SYMBOL));
+    create_token(issuer, asset(init_max_supply, RAM_SYMBOL));
 }
 
 void token::create_token(account_name issuer, asset maximum_supply)
