@@ -1,5 +1,5 @@
 #include "eosram.token.hpp"
-#include "constants.hpp"
+#include "../constants.hpp"
 #include <utility>
 
 using namespace eosram;
