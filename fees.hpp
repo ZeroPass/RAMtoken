@@ -3,6 +3,8 @@
 #include <eosiolib/core_symbol.hpp>
 #include <algorithm>
 
+#include "constants.hpp"
+
 namespace eosram {
     using namespace eosio;
 
@@ -26,7 +28,12 @@ namespace eosram {
     };
 
     constexpr auto cancel_fee = [](const asset& amount) {
-        auto fee = asset(1000, CORE_SYMBOL);
+        auto fee = asset(1000, EOS_SYMBOL);
+        return  fee;
+    };
+
+    constexpr auto expedite_cancel_fee = [](const asset& amount) {
+        auto fee = asset(10000, EOS_SYMBOL);
         return  fee;
     };
 }
