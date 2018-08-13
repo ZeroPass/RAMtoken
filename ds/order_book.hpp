@@ -18,8 +18,8 @@ namespace eosram {
         asset value;
         account_name trader;
         uint32_t expiration_time;
-        bool convert; // if true, when order expires the RAM token will be issued (or burned) instead of exchanged and 
-                      // equal amount of RAM will be bought/sold on rammarket.
+        bool convert_on_expire;  // if true, when order expires the RAM token will be issued (or burned) instead of exchanged and 
+                                 // equal amount of RAM will be bought/sold on rammarket.
 
         constexpr bool operator == (const order_t& o) const { 
             return trader == o.trader && value == o.value;
@@ -28,7 +28,7 @@ namespace eosram {
         constexpr bool operator != (const order_t& o) { return !(*this == o); }
         uint64_t get_id() const { return id; }
 
-        EOSLIB_SERIALIZE(order_t, (trader)(value)(expiration_time)(convert))
+        EOSLIB_SERIALIZE(order_t, (trader)(value)(expiration_time)(convert_on_expire))
     };
 
 

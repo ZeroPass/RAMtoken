@@ -28,10 +28,10 @@ namespace eosram {
             return "convert"sv;
         }
 
-        memo_cmd_make_order(int32_t ttl = infinite_ttl, bool convert = false)
+        memo_cmd_make_order(int32_t ttl = infinite_ttl, bool force_convert = false)
         {
             set_ttl(ttl);
-            set_convert(convert);
+            set_convert(force_convert);
         }
 
         int32_t ttl() const
@@ -39,7 +39,7 @@ namespace eosram {
             return ttl_;
         }
 
-        bool convert() const
+        bool convert_on_expire() const
         {
             return convert_;
         }
@@ -63,7 +63,7 @@ namespace eosram {
             eosio_assert(is_at_end || str_contains_at(memo, parse_pos++, arg_delim()),
                 "memo_cmd_make_order: Invalid arg delim!");
 
-            // Check for convert flag
+            // Check for convert arg
             if(!is_at_end)
             {
                 const bool has_arg = str_contains_at(memo, parse_pos, arg_convert_tag());
@@ -97,12 +97,12 @@ namespace eosram {
         {
             eosio_assert(ttl_valid(ttl), "memo_cmd_make_order: Invalid TTL!");
             ttl_ = std::max(ttl, infinite_ttl);
-            set_convert(convert_); // reset convert if ttl is infinite
+            set_convert(convert_); // reset convert on expire if ttl is infinite
         }
 
-        void set_convert(bool convert)
+        void set_convert(bool force_convert)
         {
-            convert_ = ttl_infinite(ttl_) ? false : convert;
+            convert_ = ttl_infinite(ttl_) ? false : force_convert;
         }
 
     private:
