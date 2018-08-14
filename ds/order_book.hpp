@@ -5,6 +5,7 @@
 #include "index_queue.hpp"
 #include "../constants.hpp"
 #include "../log.hpp"
+#include "../order_utils.hpp"
 #include "../utils.hpp"
 #include "../types.hpp"
 
