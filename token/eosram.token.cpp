@@ -1,5 +1,6 @@
 #include "eosram.token.hpp"
 #include "../constants.hpp"
+#include "../log.hpp"
 #include <utility>
 
 using namespace eosram;
@@ -48,7 +49,7 @@ void token::issue(account_name to, asset quantity, string memo)
     auto sym_name = sym.name();
     stats statstable(_self, sym_name);
     auto existing = statstable.find( sym_name );
-    eosio_assert(existing != statstable.end(), "token with symbol does not exist, create token before issue");
+    eosio_assert(existing != statstable.end(), "Invalid RAM token!");
     const auto& st = *existing;
 
     require_auth(st.issuer);
@@ -72,23 +73,23 @@ void token::issue(account_name to, asset quantity, string memo)
 void token::burn(asset quantity, string memo)
 {
     auto sym = quantity.symbol;
-    eosio_assert(sym.is_valid(), "invalid symbol name");
+    eosio_assert(sym.is_valid(), "Invalid symbol name");
     eosio_assert(memo.size() <= 256, "memo has more than 256 bytes");
 
     auto sym_name = sym.name();
     stats statstable(_self, sym_name);
     auto existing = statstable.find( sym_name );
-    eosio_assert(existing != statstable.end(), "token with symbol does not exist, create token before burn");
+    eosio_assert(existing != statstable.end(), "Invalid RAM token!");
     const auto& st = *existing;
 
     const auto& from = st.issuer;
     require_auth(from);
     require_recipient(from);
-    eosio_assert(quantity.is_valid(), "invalid quantity");
-    eosio_assert(quantity.amount > 0, "must burn positive quantity");
+    eosio_assert(quantity.is_valid(), "Invalid quantity!");
+    eosio_assert(quantity.amount > 0, "Must burn positive quantity!");
 
-    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
-    eosio_assert(quantity.amount <= st.supply.amount, "quantity exceeds available supply");
+    eosio_assert(quantity.symbol == st.supply.symbol, "Symbol precision mismatch!");
+    eosio_assert(quantity.amount <= st.supply.amount, "Quantity exceeds available supply!");
 
     sub_balance(from, quantity);
     statstable.modify(st, 0, [&](auto& s) {
@@ -96,34 +97,24 @@ void token::burn(asset quantity, string memo)
     });
 }
 
-void token::signup(account_name owner)
+void token::signup(account_name account)
 {
-    signup_account(owner, asset(0, symbol()));
-}
+    auto null_value = asset(0, symbol());
+    DEBUG_ASSERT(null_value.amount == 0, "Quantity exceeds signup allowance!"); // Sanity check
 
-void token::signup_account(account_name owner, asset quantity)
-{
-    auto sym = quantity.symbol;
-    eosio_assert(sym.is_valid(), "invalid symbol name");
-
-    auto sym_name = sym.name();
+    auto sym_name = null_value.symbol.name();
     stats statstable( _self, sym_name );
-    auto existing = statstable.find( sym_name );
-    eosio_assert(existing != statstable.end(), "token with symbol does not exist");
-    const auto& st = *existing;
+    auto existing = statstable.find(sym_name);
+    eosio_assert(existing != statstable.end(), "RAM token does not exist yet!");
 
-    require_auth(owner);
-    require_recipient(owner);
+    require_auth(account);
+    require_recipient(account);
 
-    accounts owner_acnts(_self, owner);
+    accounts owner_acnts(_self, account);
     auto currency = owner_acnts.find(sym_name);
-    eosio_assert(currency == owner_acnts.end(), "you have already signed up");
+    eosio_assert(currency == owner_acnts.end(), "Account has already balance!");
 
-    eosio_assert(quantity.is_valid(), "invalid quantity");
-    eosio_assert(quantity.amount == 0, "quantity exceeds signup allowance");
-    eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
-
-    add_balance(owner, quantity, owner);
+    add_balance(account, null_value, /*payer=*/account);
 }
 
 void token::transfer(account_name from, account_name to, asset quantity, string memo)
