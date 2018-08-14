@@ -13,7 +13,7 @@
 #include <type_traits>
 
 #include "constants.hpp"
-#include "ds/order_book.hpp"
+#include "types.hpp"
 
 #undef EOSIO_ABI
 #define EOSIO_ABI(TYPE, MEMBERS) \
@@ -37,7 +37,10 @@ extern "C" {  \
 }
 
 
-namespace eosio {
+namespace eosram {
+    using eosio::asset;
+    using eosio::extended_asset;
+    using eosio::symbol_type;
 
     static void asset_assert(const asset& asset, const symbol_type& sym,  const char* msg)
     {
@@ -76,9 +79,8 @@ namespace eosio {
     }
 
     /* Returns order id from transaction id */
-    static eosram::order_id_t get_order_id(const transaction_id_type& txid)
+    static order_id_t get_order_id(const transaction_id_type& txid)
     {
-        using eosram::order_id_t;
         static_assert(sizeof(order_id_t) == sizeof(uint64_t), "size mismatch!");
         const uint64_t* p64 = reinterpret_cast<const uint64_t*>(&txid);
         order_id_t order_id_l = p64[0] ^ p64[1];
@@ -86,11 +88,11 @@ namespace eosio {
         return order_id_l ^ order_id_r;
     }
 
-    static bool ttl_infinite(int32_t ttl) {
+    static bool ttl_infinite(ttl_t ttl) {
         return ttl <= infinite_ttl;
     }
 
-    static bool ttl_valid(int32_t ttl) {
+    static bool ttl_valid(ttl_t ttl) {
         return ttl_infinite(ttl) || ttl >= min_ttl;
     }
 
@@ -102,7 +104,7 @@ namespace eosio {
     * @param order expiration time
     * @returns true/false
     */
-    static bool order_expired(uint32_t time) {
+    static bool order_expired(ttl_t time) {
         return time != 0 && now() >= time;
     }
 
@@ -113,12 +115,11 @@ namespace eosio {
     * @param ttl
     * @returns order expiration time based on current time
     */
-    static uint32_t get_order_expiration_time(int32_t ttl) 
-    {   eosio_assert(ttl_valid(ttl), "Invlid order ttl!");
+    static uint32_t get_order_expiration_time(ttl_t ttl) 
+    {   
+        eosio_assert(ttl_valid(ttl), "Invlid order ttl!");
         return ttl_infinite(ttl) ? 0 : now() + ttl;
     }
-
-
 
     // Converts char to byte (code ref taken from eosio/fc)
     static uint8_t from_hex(char c)

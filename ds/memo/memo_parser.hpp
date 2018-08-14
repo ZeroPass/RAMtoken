@@ -10,7 +10,7 @@
 #include "memo_cmd_make_order.hpp"
 #include "../../log.hpp"
 
-namespace eosram {
+namespace eosram::ds {
     class memo_parser
     {
     public:
@@ -72,7 +72,7 @@ namespace eosram {
         }
 
     private:
-        ::eosram::memo_cmd_type cmd_;
+        ds::memo_cmd_type cmd_;
         std::string memo_;
         std::size_t ofs_ = 0;
     };

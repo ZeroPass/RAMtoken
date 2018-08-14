@@ -5,12 +5,8 @@
 #include <string>
 #include <string_view>
 
-namespace eosram {
+namespace eosram::ds {
     using namespace std::string_view_literals;
-    using eosio::to_hex;
-    using eosio::from_hex;
-    using eosio::str_to_num;
-    using eosio::num_to_str;
 
     class memo_cmd_cancel_order : public memo_cmd<memo_cmd_cancel_order>
     {

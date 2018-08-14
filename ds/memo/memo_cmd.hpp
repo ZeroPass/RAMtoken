@@ -2,7 +2,7 @@
 #include <string>
 #include <string_view>
 
-namespace eosram {
+namespace eosram::ds {
     enum class memo_cmd_type {};
 
     constexpr auto memo_cmd_type_to_int(memo_cmd_type t) 

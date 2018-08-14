@@ -3,7 +3,8 @@
 #include <eosio.system/eosio.system.hpp>
 #include "ram_exchange_state.cpp"
 
-namespace eosio {
+namespace eosram::ds {
+    using eosio::asset;
 
     /* Struct defines kibibyte unit */
     struct kibyte

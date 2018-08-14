@@ -1,13 +1,11 @@
 #pragma once
+#include "../order_book.hpp"
 #include "../../utils.hpp"
 #include <string>
 #include <string_view>
 
-namespace eosram {
+namespace eosram::ds {
     using namespace std::string_view_literals;
-    using eosio::str_contains_at;
-    using eosio::ttl_infinite;
-    using eosio::ttl_valid;
 
     class memo_cmd_make_order : public memo_cmd<memo_cmd_make_order>
     {
@@ -28,13 +26,13 @@ namespace eosram {
             return "convert"sv;
         }
 
-        memo_cmd_make_order(int32_t ttl = infinite_ttl, bool force_convert = false)
+        memo_cmd_make_order(ttl_t ttl = infinite_ttl, bool force_convert = false)
         {
             set_ttl(ttl);
             set_convert(force_convert);
         }
 
-        int32_t ttl() const
+        ttl_t ttl() const
         {
             return ttl_;
         }
@@ -53,7 +51,7 @@ namespace eosram {
 
             // Parse ttl
             std::size_t parse_pos = 0UL;
-            const int32_t ttl = str_to_num(memo, &parse_pos);
+            const ttl_t ttl = str_to_num(memo, &parse_pos);
             order_cmd.set_ttl(ttl);
 
             // Verify parser state
@@ -93,7 +91,7 @@ namespace eosram {
         }
 
     private:
-        void set_ttl(int32_t ttl)
+        void set_ttl(ttl_t ttl)
         {
             eosio_assert(ttl_valid(ttl), "memo_cmd_make_order: Invalid TTL!");
             ttl_ = std::max(ttl, infinite_ttl);
@@ -106,7 +104,7 @@ namespace eosram {
         }
 
     private:
-        int32_t ttl_;
+        ttl_t ttl_;
         bool convert_;
     };
 }

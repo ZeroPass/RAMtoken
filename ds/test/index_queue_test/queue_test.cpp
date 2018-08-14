@@ -5,6 +5,7 @@
 #include "../../index_queue.hpp"
 
 
+using namespace eosram::ds;
 using namespace eosio;
 
 

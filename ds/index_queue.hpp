@@ -8,7 +8,8 @@
 #include <utility>
 #include <type_traits>
 
-namespace eosio {
+namespace eosram::ds {
+    using eosio::multi_index;
 
     template<uint64_t QueueName, typename ValueType,  typename... Indices>
     class index_queue
@@ -170,9 +171,9 @@ namespace eosio {
             });
         }
 
-        optional<ValueType> pop()
+        eosio::optional<ValueType> pop()
         {
-            optional<ValueType> v;
+            eosio::optional<ValueType> v;
             auto it = qi_.begin();
             if(it != qi_.end()) 
             {

@@ -1,6 +1,7 @@
 #include <eosiolib/eosio.hpp>
 #include "../../ram_market.hpp"
 
+using namespace eosram::ds;
 using namespace eosio;
 
 struct rammarket_test : public eosio::contract 
