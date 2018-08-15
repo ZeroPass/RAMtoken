@@ -5,8 +5,6 @@
 #include "index_queue.hpp"
 #include "../constants.hpp"
 #include "../log.hpp"
-#include "../order_utils.hpp"
-#include "../utils.hpp"
 #include "../types.hpp"
 
 namespace eosram::ds {
@@ -65,25 +63,17 @@ namespace eosram::ds {
         }
 
         /** Makes new order entry at the back of the book */
-        order_id_t emplace_order(account_name trader, asset value, ttl_t ttl, bool force_trade)
+        void emplace_order(order_id_t order_id, account_name trader, asset value, uint32_t expiration_time, bool force_trade)
         {
-            // Generate order id from current txid
-            order_id_t order_id = get_order_id(get_txid()); 
-
-            // Sanity checks
-            eosio_assert(!this->contains(order_id), "Order already exists!");
-            DEBUG_ASSERT(this->get_scope() == value.symbol, "Book.asset.symbol != value.symbol");
-
             order_t order;
             order.id                = order_id;
             order.value             = value;
             order.trader            = trader;
-            order.expiration_time   = get_order_expiration_time(ttl);
+            order.expiration_time   = expiration_time;
             order.convert_on_expire = force_trade;
 
             // Push order to the back of the queue
             this->push(std::move(order), /*payer=*/trader);
-            return order_id;
         }
     };
 

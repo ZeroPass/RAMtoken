@@ -1,5 +1,6 @@
 #pragma once
-#include "../order_book.hpp"
+#include "../../order_utils.hpp"
+#include "../../types.hpp"
 #include "../../utils.hpp"
 #include <string>
 #include <string_view>
