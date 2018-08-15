@@ -27,7 +27,7 @@ namespace eosram::ds {
         constexpr bool operator != (const order_t& o) { return !(*this == o); }
         uint64_t get_id() const { return id; }
 
-        EOSLIB_SERIALIZE(order_t, (trader)(value)(expiration_time)(convert_on_expire))
+        EOSLIB_SERIALIZE(order_t, (id)(value)(trader)(expiration_time)(convert_on_expire))
     };
 
 
