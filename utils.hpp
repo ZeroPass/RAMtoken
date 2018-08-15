@@ -25,12 +25,15 @@ extern "C" {  \
             eosio_assert(sender == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
         } \
         TYPE thiscontract( self ); \
+        bool action_dispatched = false; \
         if(sender == self || action == N(onerror)) { \
+            action_dispatched = true; \
             switch( action ) { \
                 EOSIO_API( TYPE, MEMBERS ) \
+                default: action_dispatched = false; \
             } \
         } \
-        else { \
+        if(!action_dispatched) { \
             thiscontract.on_notification(sender, action); \
         } \
     } \
