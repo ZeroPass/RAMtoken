@@ -151,8 +151,8 @@ public:
         {
             auto next_key = it->key;
 
-            // Defered call
-            transaction out{};
+            // Deferred call
+            transaction out;
             out.actions.emplace_back
             (
                 permission_level{_self, N(active)},
