@@ -62,6 +62,11 @@ namespace eosram::ds {
             }
         }
 
+        const_iterator erase(const_iterator it)
+        {
+            return detail::order_queue_t::erase(it);
+        }
+
         /** Makes new order entry at the back of the book */
         void emplace_order(order_id_t order_id, account_name trader, asset value, uint32_t expiration_time, bool force_trade)
         {
