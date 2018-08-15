@@ -33,16 +33,16 @@ namespace eosram {
     * @param order expiration time
     * @returns true/false
     */
-    static bool order_expired(ttl_t time) {
+    static bool order_expired(uint32_t time) {
         return time != 0 && now() >= time;
     }
 
    /** 
-    * Returns order's expiration time based on current time and ttl.
+    * Returns expiration time of a trade order based on current time and TTL.
     * If ttl is infinite than experation time is 0.
     * 
     * @param ttl
-    * @returns order expiration time based on current time
+    * @returns expiration time
     */
     static uint32_t get_order_expiration_time(ttl_t ttl) 
     {   
