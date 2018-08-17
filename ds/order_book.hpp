@@ -62,6 +62,11 @@ namespace eosram::ds {
             }
         }
 
+        void erase(const order_t& order)
+        {
+            erase(order.id);
+        }
+
         const_iterator erase(const_iterator it)
         {
             return detail::order_queue_t::erase(it);
