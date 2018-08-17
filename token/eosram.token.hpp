@@ -40,8 +40,9 @@ namespace eosram {
         // @abi action
         void transfer(account_name from, account_name to, asset quantity, string memo);
 
-        inline asset get_supply(symbol_name sym) const;
-        inline asset get_balance(account_name owner, symbol_name sym) const;
+        inline asset get_supply(symbol_type sym) const;
+        inline asset get_balance(account_name owner, symbol_type sym) const;
+        inline bool has_balance(account_name owner, symbol_type sym) const;
 
     private:
         // @abi table accounts i64
@@ -81,18 +82,23 @@ namespace eosram {
         };
     };
 
-    asset token::get_supply(symbol_name sym) const
+    asset token::get_supply(symbol_type sym) const
     {
-        stats statstable( _self, sym );
-        const auto& st = statstable.get( sym );
+        stats statstable(_self, sym);
+        const auto& st = statstable.get(sym.name());
         return st.supply;
     }
 
-    asset token::get_balance(account_name owner, symbol_name sym) const
+    asset token::get_balance(account_name owner, symbol_type sym) const
     {
-        accounts accountstable( _self, owner );
-        const auto& ac = accountstable.get( sym );
+        accounts accountstable(_self, owner);
+        const auto& ac = accountstable.get(sym.name());
         return ac.balance;
     }
 
+    bool token::has_balance(account_name owner, symbol_type sym) const
+    {
+        accounts accnt(_self, owner);
+        return accnt.find(sym.name()) != accnt.end();
+    }
 } /// namespace eosram

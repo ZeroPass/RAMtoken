@@ -25,12 +25,12 @@ void token::create_token(account_name issuer, asset maximum_supply)
     require_auth(_self);
 
     auto sym = maximum_supply.symbol;
-    eosio_assert(sym.is_valid(), "invalid symbol name");
+    eosio_assert(sym.is_valid(), "invalid RAM token symbol name");
     eosio_assert(maximum_supply.is_valid(), "invalid supply");
     eosio_assert(maximum_supply.amount > 0, "max-supply must be positive");
 
     stats statstable(_self, sym.name());
-    auto existing = statstable.find( sym.name() );
+    auto existing = statstable.find(sym.name());
     eosio_assert( existing == statstable.end(), "token with symbol already exists" );
 
     statstable.emplace(_self, [&](auto& s) {
