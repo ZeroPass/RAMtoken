@@ -52,7 +52,7 @@ namespace eosram::ds {
 
             // Parse ttl
             std::size_t parse_pos = 0UL;
-            const ttl_t ttl = str_to_num(memo, &parse_pos);
+            const ttl_t ttl = to_number(memo, &parse_pos);
             order_cmd.set_ttl(ttl);
 
             // Verify parser state
@@ -80,7 +80,7 @@ namespace eosram::ds {
             std::string memo(cmd_tag());
             if(!ttl_infinite(ttl_)) 
             {
-                memo.append(num_to_str(ttl_));
+                memo.append(eosram::to_string(ttl_));
                 if(convert_) 
                 {
                     memo.append(arg_delim());

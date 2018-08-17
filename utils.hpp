@@ -154,7 +154,7 @@ namespace eosram {
     }
 
     /** Converts number to string */
-    static std::string num_to_str(int32_t num)
+    static std::string to_string(int32_t num)
     {
         uint8_t neg = false;
         if(num < 0)
@@ -187,7 +187,7 @@ namespace eosram {
     *
     * @returns number
     */
-    static int32_t str_to_num(std::string_view str, std::size_t* end_pos = nullptr)
+    static int32_t to_number(std::string_view str, std::size_t* end_pos = nullptr)
     {
         if(str.empty()) 
         {
