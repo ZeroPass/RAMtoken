@@ -59,15 +59,6 @@ namespace eosram {
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }
 
-    /* Inline transfers token from snder to recipient */
-    static void transfer_token(const account_name from, const account_name to, const extended_asset amount, std::string memo = "")
-    {
-        eosio_assert(amount.is_valid(), "Cannot transfer invalid amount!" );
-        dispatch_inline(amount.contract,  N(transfer), {{ from, N(active) }}, 
-            std::make_tuple(from, to, static_cast<const asset&>(amount), std::move(memo))
-        );
-    }
-
     /* Returns current transaction id */
     static transaction_id_type get_txid() 
     {
