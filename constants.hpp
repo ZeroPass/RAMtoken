@@ -36,6 +36,15 @@ namespace eosram {
         return eosio::extended_asset(asset, RAM_TOKEN_CONTRACT);
     }
 
+    static eosio::extended_asset to_token(eosio::asset asset) 
+    {
+        if(asset.symbol == EOS_SYMBOL) {
+            return eos_asset(asset);
+        } else {
+            return ram_asset(asset);
+        }
+    }
+
     static auto operator"" _EOS (unsigned long long value) {
         return eos_asset(eosio::asset(static_cast<int64_t>(value), EOS_SYMBOL));
     }
