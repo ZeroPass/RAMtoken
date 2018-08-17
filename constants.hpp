@@ -9,11 +9,13 @@
 #define RAM_SYMBOL S(0, RAM)
 #define EOS_SYMBOL CORE_SYMBOL
 #define EOS_TOKEN_CONTRACT N(eosio.token)
+#define EOSIO_RAM_CONTRACT N(eosio.ram)
 #define RAM_TOKEN_CONTRACT N(ram.token)
 
+
 namespace eosram {
-    static constexpr int32_t min_ttl = 60; // 1min
-    static constexpr ttl_t infinite_ttl = -1;
+    static constexpr int32_t min_ttl = 5; // 1min
+    static constexpr ttl_t   infinite_ttl = -1;
     static constexpr int64_t min_ram_trade_amount = 1024; // 1KiB
 
     static eosio::extended_symbol eos_symbol() {
