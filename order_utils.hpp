@@ -1,4 +1,5 @@
 #pragma once
+#include <eosiolib/symbol.hpp>
 #include <eosiolib/system.h>
 #include <eosiolib/types.h>
 
@@ -48,5 +49,13 @@ namespace eosram {
     {   
         eosio_assert(ttl_valid(ttl), "Invlid ttl!");
         return ttl_infinite(ttl) ? 0 : now() + ttl;
+    }
+
+    static bool is_buy_order(const ds::order_t& order) {
+        return order.value.symbol == EOS_SYMBOL;
+    }
+
+    static bool is_sell_order(const ds::order_t& order) {
+        return order.value.symbol == RAM_SYMBOL;
     }
 }
