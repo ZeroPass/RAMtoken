@@ -14,6 +14,7 @@
 namespace eosram {
     static constexpr int32_t min_ttl = 60; // 1min
     static constexpr ttl_t infinite_ttl = -1;
+    static constexpr int64_t min_ram_trade_amount = 1024; // 1KiB
 
     static eosio::extended_symbol eos_symbol() {
         return eosio::extended_symbol(EOS_SYMBOL, EOS_TOKEN_CONTRACT);
