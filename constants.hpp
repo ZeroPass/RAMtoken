@@ -27,7 +27,7 @@ namespace eosram {
     }
 
     static eosio::extended_symbol ram_symbol() {
-        return eosio::extended_symbol(RAM_SYMBOL, EOS_TOKEN_CONTRACT);
+        return eosio::extended_symbol(RAM_SYMBOL, RAM_TOKEN_CONTRACT);
     }
 
     static eosio::extended_asset ram_asset(eosio::asset asset) 
