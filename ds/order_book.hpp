@@ -54,6 +54,17 @@ namespace eosram::ds {
             return detail::order_queue_t::contains<detail::index_order_id>(id);
         }
 
+        void modify(order_t order, account_name payer)
+        {
+            auto it = find(order.id);
+            modify(it, std::move(order), payer);
+        }
+
+        void modify(const_iterator it, order_t order, account_name payer)
+        {
+            detail::order_queue_t::modify(it, std::move(order), payer);
+        }
+
         void erase(order_id_t id)
         {
             auto it = find(id);
