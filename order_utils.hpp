@@ -3,6 +3,7 @@
 #include <eosiolib/system.h>
 #include <eosiolib/types.h>
 
+#include "ds/order_book.hpp"
 #include "constants.hpp"
 #include "types.hpp"
 
@@ -34,8 +35,10 @@ namespace eosram {
     * @param order expiration time
     * @returns true/false
     */
-    static bool order_expired(uint32_t time) {
-        return time != 0 && now() >= time;
+    static bool has_order_expired(const ds::order_t& order) 
+    {   
+        const auto exp_time = order.expiration_time;
+        return exp_time != 0 && now() >= exp_time;
     }
 
    /** 

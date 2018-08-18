@@ -45,17 +45,17 @@ namespace eosram {
     };
 
     constexpr auto cancel_order_fee = [](const asset& amount) -> asset {
-        auto fee = asset(1000, EOS_SYMBOL);
+        auto fee = asset(0'1000, EOS_SYMBOL);
         return  fee;
     };
 
     constexpr auto expedite_cancel_order_fee = [](const asset& amount) -> asset {
-        auto fee = asset(10000, EOS_SYMBOL);
+        auto fee = asset(1'0000, EOS_SYMBOL);
         return  fee;
     };
 
 
-    // System contract ram market fee
+    // ram market fee of system contract (eosio.ram)
     // src: https://github.com/EOSIO/eos/blob/d7a6fd10ac0ab34595068f339f8b3d24a06f1db3/contracts/eosio.system/delegate_bandwidth.cpp#L111
     constexpr auto ram_market_fee = [](const asset& amount) -> asset {
         asset fee = amount;
