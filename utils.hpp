@@ -216,4 +216,48 @@ namespace eosram {
         if(end_pos) *end_pos = pos;
         return static_cast<int32_t>((n^neg) - neg);
     }
+
+    static std::string to_string(const symbol_type symt)
+    {
+        auto sym = symt.name();
+        char str_sym[7] = {0};
+        std::size_t len = 0;
+        for( ; len < 7; ++len ) 
+        {
+            char c = (char)(sym & 0xff);
+            if( !c ) break;
+            str_sym[len] = c;
+            sym >>= 8;
+        }
+
+        return std::string(str_sym, len);
+    }
+
+    static std::string to_string(const asset& asset)
+    {
+        int64_t p = (int64_t)asset.symbol.precision();
+         int64_t p10 = 1;
+         while( p > 0  ) {
+            p10 *= 10; --p;
+         }
+
+         p = (int64_t)asset.symbol.precision();
+
+         char fraction[p+1];
+         fraction[p] = '\0';
+         auto change = asset.amount % p10;
+
+         for( int64_t i = p -1; i >= 0; --i ) {
+            fraction[i] = (change % 10) + '0';
+            change /= 10;
+         }
+
+         std::string str = to_string(asset.amount / p10);
+         if(p > 0) {
+             str += "." + std::string(fraction, uint32_t(p));
+         }
+
+         str += " " + to_string(asset.symbol);
+         return str;
+    }
 }

@@ -75,6 +75,6 @@ namespace eosram {
     }
 
     static std::string gen_trade_memo(bool buy, asset amount, asset price) {
-        return (buy ? "Bought" : "Sold ") + to_string(amount) + " tokens @" + to_string(price) + "/KiB";
+        return (buy ? "Bought " : "Sold ") + to_string(amount) + " tokens @" + to_string(price) + "/KiB";
     }
 }
