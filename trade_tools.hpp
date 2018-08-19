@@ -60,7 +60,7 @@ namespace eosram {
         return value >= min_trade_amount(value.symbol);
     }
 
-    static void assert_trade_amount(const asset& value, const char* msg)
+    static void require_min_trade_amount(const asset& value, const char* msg)
     {
         eosio_assert(is_min_trade_amount(value), msg);
     }
