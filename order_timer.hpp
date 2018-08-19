@@ -80,7 +80,7 @@ namespace eosram {
         eosio::transaction tx_;
     };
 
-    static bool cancel_order_timer(const timer_id& id) {
+    static bool stop_order_timer(const timer_id& id) {
         return cancel_deferred(id) > 0;
     }
 }
