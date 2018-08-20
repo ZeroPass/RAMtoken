@@ -1,114 +1,100 @@
+
+#include <eosiolib/asset.hpp>
+#include <eosiolib/eosio.hpp>
+#include <eosiolib/types.hpp>
+
+#include "constants.hpp"
+#include "ds/ram_market.hpp"
+#include "ds/order_book.hpp"
+#include "ds/memo/memo.hpp"
+
 #include <algorithm>
 #include <cmath>
-#include <eosiolib/asset.hpp>
-#include <eosiolib/currency.hpp>
-#include <eosiolib/eosio.hpp>
-#include <eosiolib/public_key.hpp>
-#include <eosiolib/print.hpp>
-#include "ds/ram_market.hpp"
-#include "ds/index_queue.hpp"
-
+#include <optional>
 #include <string>
-#include <queue>
-
-#define tokenSym "RAM"
 
 namespace eosram {
+    using namespace eosio;
+
     class exchange : public eosio::contract
     {
-        public:
-            exchange(account_name self);
-            
-            //buy RAM token
-            //if ttl is 0(zero) we wont remove order from queue (if you want to get your tokens back, just call withdraw)
-            //@abi action
-            void buy (account_name from, eosio::asset value, uint32_t ttl, bool forceSell);
-            //sell RAM token
-            //@abi action
-            void sell (account_name from, eosio::asset value, uint32_t ttl, bool forceSell);
-            //get actual RAM price (Bancor algorithm)
-            //@abi action
-            void getvalue();
-            //withdraw expired EOS tokens
-            //@abi action
-            void withdraweos(account_name to);
-            //withdraw expired RAM tokens
-            //@abi action
-            void withdrawram(account_name to);
-            //get current account volume
-            //@abi action
-            void getvolume();
-            //do transaction - merge matches - it the future it goes to the private
-            //@abi action
-            void dotransfer();
-            //remove entries with expired TTL - if needed buy/sell ram on EOS market
-            //@abi action
-            void sweep();
-            
-            
-        private:
-            eosio::ram_market rm;
-            
-            //@abi table
-            struct Offer {
-                uint64_t key;
-                account_name account;
-                eosio::asset value;
-                uint32_t ttl;
-                bool forced;
-                
-                constexpr bool operator == (const Offer& qv) const { 
-                    return account == qv.account && value == qv.value;
-                }
-                constexpr bool operator != (const Offer& qv) { return !(*this == qv); }
-                uint64_t get_key() const { return key; }
-                static uint64_t calculate_key(account_name account, uint64_t timestamp)
-                {
-                    //TODO: implement that function will combine account and timestamp and then make hash of them together
-                    return timestamp;
-                }
+    public:
+        exchange(account_name self);
 
-                EOSLIB_SERIALIZE(Offer, (account)(value)(ttl)(forced))
-            };
-            
-            
-            static constexpr uint64_t index_key = N("key");
-            typedef eosio::index_queue<N(ladder),
-                Offer, 
-                eosio::indexed_by<index_key, eosio::const_mem_fun<Offer, uint64_t, &Offer::get_key>>
-                > Ladder;
-                
-            //Ladder ladderBuy;
-            //Ladder ladderSell;
-                
-            eosio::asset getLiveValue();
-            eosio::asset getMinimum(eosio::asset a, eosio::asset b);
-            eosio::asset getAmonutOfRamTokens(eosio::asset a, eosio::asset price);
-            
-            //just temp queue structure
-            std::queue<Offer> buyLadder;
-            std::queue<Offer> sellLadder;
-            
-            
-            /*
-            *
-            * Queue functions - probably they go to the separate structure
-            *
-            */
-            //add item to the queue
-            void addToQueue(Offer item, std::queue<Offer> queue);
-            //iterate through queue and return found item (Account key is search key)
-            Offer findInQueue(std::queue<Offer> queue, account_name acc);
-            //get element (FIFO rules)
-            Offer getFromBuyQueue();
-            //get element (FIFO rules)
-            Offer getFromSellQueue();
-            //remove an item from queue - return false if it was not removed and vice versa
-            bool removeFromQueue(account_name account);
-            
-            bool popFromBuyQueue();
-            bool popFromSellQueue();
+        // @abi action
+        void test(account_name payer, uint64_t limit, std::string memo);
+        
+        //buy RAM token
+        //if ttl is -1 buy order will not expier  (if you want to get your tokens back, just call withdraw)
+        //@abi action
+        void buy(account_name buyer, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_buy = true);
 
+        //sell RAM token
+        //@abi action
+        void sell(account_name seller, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
+
+        //@abi action
+        void cancel(account_name from, transaction_id_type txid, asset value);
+
+        /* Exchange's owner actions */
+        // @abi action
+        void init(account_name fee_recipient);
+
+        // @abi action
+        void setfeerecip(account_name account);
+        
+        // @abi action
+        void start();
+
+        // @abi action
+        void stop();
+
+        // @abi action
+        void clrallorders(std::string reason);
+
+        // @abi action
+        void clrorders(symbol_type sym, std::string reason);
+
+        // @abi action
+        void sweep();
+
+        // signal handler
+        void on_notification(uint64_t sender, uint64_t action);
+
+    private:
+        void execute_memo_cmd(const ds::memo_cmd_make_order& cmd, account_name account, asset value);
+        void execute_memo_cmd(const ds::memo_cmd_cancel_order& cmd, account_name account, asset value);
+        void start_ttl_timer(order_id_t order_id, ttl_t ttl, account_name actor, std::string reason);
+
+        ds::order_book get_order_book_of(order_id_t order_id, const char* error_msg = "Order doesn't exists") const;
+        bool order_exists(order_id_t id) const;
+
+        std::optional<ds::order_book>
+            get_opt_order_book_of(order_id_t id) const;
+
+        void make_buy_order(account_name buyer, asset value, ttl_t ttl, bool force_buy);
+        void make_sell_order(account_name seller, asset value, ttl_t ttl, bool force_sell);
+        void make_order_and_execute(ds::order_book&, account_name trader, asset value, ttl_t ttl, bool exec_on_expire);
+        void execute_order(order_id_t order_id);
+        void execute_trade(ds::order_t& o1, ds::order_t& o2);
+        void deduct_fee_and_transfer(account_name recipient, const asset& amount, std::string memo);
+
+        void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
+        void issue_ram_token(asset amount);
+        void burn_ram_token(asset amount);
+
+        // signals
+        void on_transfer(account_name from, account_name to, asset quantity, std::string memo);
+        void on_payment_received(account_name from, asset quantity, std::string memo);
+        void on_order_expired(order_id_t order_id, std::string reason);
+
+        // authorization 
+        void require_owner() const;
+        void require_admin() const;
+
+        // exchange state
+        bool is_running() const;
+        void require_running() const;
+        account_name fee_recipient() const;
     };
-    EOSIO_ABI( exchange, (buy)(sell)(getvalue)(withdraweos)(withdrawram)(getvolume)(dotransfer));
 } // eosram
