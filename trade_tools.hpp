@@ -65,16 +65,26 @@ namespace eosram {
         eosio_assert(is_min_trade_amount(value), msg);
     }
 
-     /* Inline transfers token from snder to recipient */
-    static void transfer_token(const account_name from, const account_name to, const extended_asset amount, std::string memo = "")
+    /* Inline transfers token from snder to recipient */
+    static void transfer_token(const account_name from, const permission_name perm, const account_name to, const extended_asset& amount, std::string memo = "")
     {
         eosio_assert(amount.is_valid(), "Cannot transfer invalid amount!" );
-        dispatch_inline(amount.contract,  N(transfer), {{ from, N(active) }}, 
+        dispatch_inline(amount.contract,  N(transfer), {{from, perm}}, 
             std::make_tuple(from, to, static_cast<const asset&>(amount), std::move(memo))
         );
     }
 
+    static void transfer_token(const account_name from, const account_name to, const extended_asset& amount, std::string memo = "") {
+        transfer_token(from, N(active), to, amount, std::move(memo));
+    }
+
     static std::string gen_trade_memo(bool buy, asset amount, asset price) {
         return (buy ? "Bought " : "Sold ") + to_string(amount) + " tokens @" + to_string(price) + "/KiB";
+    }
+
+    static asset min_asset(const asset& a1, const asset& a2)
+    {
+        eosio_assert(a1.symbol == a2.symbol, "Can't compare amount of different assets");
+        return asset(std::min(a1.amount, a2.amount), a1.symbol);
     }
 }
