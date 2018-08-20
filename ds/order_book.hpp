@@ -11,7 +11,7 @@ namespace eosram::ds {
     using namespace eosio;
 
     //@abi table orderbook
-    struct order_t
+    struct order_t : index_queue_element
     {
         order_id_t id;
         asset value;
@@ -20,6 +20,13 @@ namespace eosram::ds {
         bool convert_on_expire;  // if true, when order expires the RAM token will be issued (or burned) instead of exchanged and 
                                  // equal amount of RAM will be bought/sold on rammarket.
 
+        order_t() = default;
+        order_t(order_id_t oid, asset v, account_name t, uint32_t etime, bool exe_on_expire) :
+            id(oid), value(v), trader(t),
+            expiration_time(etime), 
+            convert_on_expire(exe_on_expire)
+        {}
+
         constexpr bool operator == (const order_t& o) const { 
             return trader == o.trader && value == o.value;
         }
@@ -27,12 +34,12 @@ namespace eosram::ds {
         constexpr bool operator != (const order_t& o) { return !(*this == o); }
         uint64_t get_id() const { return id; }
 
-        EOSLIB_SERIALIZE(order_t, (id)(value)(trader)(expiration_time)(convert_on_expire))
+        EOSLIB_SERIALIZE_DERIVED(order_t, index_queue_element, (id)(value)(trader)(expiration_time)(convert_on_expire))
     };
 
 
     namespace detail {
-        static constexpr auto index_order_id = N("id");
+        static constexpr auto index_order_id = N(id);
         typedef index_queue<N(orderbook), order_t,
             indexed_by<index_order_id, const_mem_fun<order_t, order_id_t, &order_t::get_id>>
         > order_queue_t;

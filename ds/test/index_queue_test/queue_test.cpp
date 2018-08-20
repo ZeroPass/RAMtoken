@@ -11,16 +11,19 @@ using namespace eosio;
 
 class queue_test : public eosio::contract 
 {
-    struct queue_value 
+    struct queue_value : index_queue_element
     {
         uint64_t key;
         int32_t value;
 
+        queue_value() = default;
+        queue_value(uint64_t k, int32_t v ) : key(k), value(v) {}
         constexpr bool operator == (const queue_value& qv) const { 
             return key == qv.key && value == qv.value;
         }
         constexpr bool operator != (const queue_value& qv) { return !(*this == qv); }
         uint64_t get_key() const { return key; }
+        EOSLIB_SERIALIZE_DERIVED(queue_value, index_queue_element, (key)(value))
     };
 
     static constexpr uint64_t index_key = N("key");
@@ -67,7 +70,7 @@ public:
             ::print("Queue is empty!");
         }
         else {
-            print_f("Top element in queue: [ord_idx:% key:% val: %]\n", it.internal_idx(), it->key, it->value);
+            print_f("Top element in queue: [ord_idx:% key:% val: %]\n", it->seq, it->key, it->value);
         }
     }
 
@@ -80,7 +83,7 @@ public:
         else
         {
             auto it = --m_q.end();
-            print_f("Bottom element in queue: [ord_idx:% key:% val: %]\n", it.internal_idx(), it->key, it->value);
+            print_f("Bottom element in queue: [ord_idx:% key:% val: %]\n", it->seq, it->key, it->value);
         }
     }
 
@@ -199,7 +202,7 @@ public:
         }
 
         for(; it != m_q.end() && num > 0; ++it, --num) {
-            print_f("[ord_idx:% key:% val: %]\n", it.internal_idx(), it->key, it->value);
+            print_f("[ord_idx:% key:% val: %]\n", it->seq, it->key, it->value);
         }
     }
 
@@ -226,23 +229,23 @@ public:
         {
             auto it = m_q.begin();
             eosio_assert(*it == qv1            , "*it ==  qv1");
-            eosio_assert(it.internal_idx() == 0, "it.internal_idx() == 0");
+            eosio_assert(it->seq == 0, "it->seq == 0");
 
             it++;
             eosio_assert(*it == qv2            , "*it ==  qv2");
-            eosio_assert(it.internal_idx() == 1, "it.internal_idx() == 1");
+            eosio_assert(it->seq == 1, "it->seq == 1");
 
             it++;
             eosio_assert(*it == qv3            , "*it ==  qv3");
-            eosio_assert(it.internal_idx() == 2, "it.internal_idx() == 2");
+            eosio_assert(it->seq == 2, "it->seq == 2");
 
             it++;
             eosio_assert(*it == qv4            , "*it ==  qv4");
-            eosio_assert(it.internal_idx() == 3, "it.internal_idx() == 3");
+            eosio_assert(it->seq == 3, "it->seq == 3");
 
             it++;
             eosio_assert(*it == qv5            , "*it ==  qv5");
-            eosio_assert(it.internal_idx() == 4, "it.internal_idx() == 4");
+            eosio_assert(it->seq == 4, "it->seq == 4");
 
             it++;
             eosio_assert(it == m_q.end(), "it == m_q.end()");
@@ -250,23 +253,23 @@ public:
             // Revrse
             --it;
             eosio_assert(*it == qv5            , "*it ==  qv5");
-            eosio_assert(it.internal_idx() == 4, "it.internal_idx() == 4");
+            eosio_assert(it->seq == 4, "it->seq == 4");
 
             --it;
             eosio_assert(*it == qv4            , "*it ==  qv4");
-            eosio_assert(it.internal_idx() == 3, "it.internal_idx() == 3");
+            eosio_assert(it->seq == 3, "it->seq == 3");
 
             --it;
             eosio_assert(*it == qv3            , "*it ==  qv3");
-            eosio_assert(it.internal_idx() == 2, "it.internal_idx() == 2");
+            eosio_assert(it->seq == 2, "it->seq == 2");
 
             --it;
             eosio_assert(*it == qv2            , "*it ==  qv2");
-            eosio_assert(it.internal_idx() == 1, "it.internal_idx() == 1");
+            eosio_assert(it->seq == 1, "it->seq == 1");
 
             --it;
             eosio_assert(*it == qv1            , "*it ==  qv1");
-            eosio_assert(it.internal_idx() == 0, "it.internal_idx() == 0");
+            eosio_assert(it->seq == 0, "it->seq == 0");
 
             // zig-zag
             eosio_assert(*(++it) == qv2, "*(++it) == qv2");
@@ -280,7 +283,7 @@ public:
         // check top element
         eosio_assert(m_q.top() != m_q.end()       , "m_q.top() != m_q.end()");
         eosio_assert(*m_q.top() ==  qv1           , "m_q.top() ==  qv1");
-        eosio_assert(m_q.top().internal_idx() == 0, "m_q.top().interest_idx() == 0");
+        eosio_assert(m_q.top()->seq == 0, "m_q.top().interest_idx() == 0");
         eosio_assert(m_q.begin() == m_q.top()     , "m_q.begin() == m_q.top()");
 
         // Get queue element by key
@@ -288,32 +291,32 @@ public:
         eosio_assert(qv1_it != m_q.end()             , "qv1_it != m_q.end()");
         eosio_assert(m_q.contains<index_key>(qv1.key), "m_q.contains<index_key>(qv1.key)");
         eosio_assert(*qv1_it == qv1                  , "*qv1_it == qv1");
-        eosio_assert(qv1_it.internal_idx() == 0      , "qv1_it.internal_idx() == 0");
+        eosio_assert(qv1_it->seq == 0                , "qv1_it->seq == 0");
         eosio_assert(qv1_it == m_q.top()             , "qv1_it == m_q.top()");
 
         auto qv2_it = m_q.find<index_key>(qv2.key);
         eosio_assert(qv2_it != m_q.end()             , "qv2_it != m_q.end()");
         eosio_assert(m_q.contains<index_key>(qv2.key), "m_q.contains<index_key>(qv2.key)");
         eosio_assert(*qv2_it == qv2                  , "*qv2_it == qv2");
-        eosio_assert(qv2_it.internal_idx() == 1      , "qv2_it.internal_idx() == 1");
+        eosio_assert(qv2_it->seq == 1                , "qv2_it->seq == 1");
 
         auto qv3_it = m_q.find<index_key>(qv3.key);
         eosio_assert(qv3_it != m_q.end()             , "qv3_it != m_q.end()");
         eosio_assert(m_q.contains<index_key>(qv3.key), "m_q.contains<index_key>(qv3.key)");
         eosio_assert(*qv3_it == qv3                  , "*qv3_it == qv3");
-        eosio_assert(qv3_it.internal_idx() == 2      , "qv3_it.internal_idx() == 2");
+        eosio_assert(qv3_it->seq == 2                , "qv3_it->seq == 2");
 
         auto qv4_it = m_q.find<index_key>(qv4.key);
         eosio_assert(qv4_it != m_q.end()             , "qv4_it != m_q.end()");
         eosio_assert(m_q.contains<index_key>(qv4.key), "m_q.contains<index_key>(qv1.key)");
         eosio_assert(*qv4_it == qv4                  , "*qv4_it == qv4");
-        eosio_assert(qv4_it.internal_idx() == 3      , "qv4_it.internal_idx() == 3");
+        eosio_assert(qv4_it->seq == 3                , "qv4_it->seq == 3");
 
         auto qv5_it = m_q.find<index_key>(qv5.key);
         eosio_assert(qv5_it != m_q.end()             , "qv5_it != m_q.end()");
         eosio_assert(m_q.contains<index_key>(qv5.key), "m_q.contains<index_key>(qv5.key)");
         eosio_assert(*qv5_it == qv5                  , "*qv5_it == qv5");
-        eosio_assert(qv5_it.internal_idx() == 4      , "qv5_it.internal_idx() == 4");
+        eosio_assert(qv5_it->seq == 4                , "qv5_it->seq == 4");
 
         // Modify top
         qv1.value = 99875911;
@@ -322,7 +325,7 @@ public:
         eosio_assert(qv1_it != m_q.end()        , "qv1_it != m_q.end()");
         eosio_assert(*qv1_it == qv1             , "*qv1_it == qv1");
         eosio_assert(*m_q.top() == qv1          , "*m_q.top() == qv1");
-        eosio_assert(qv1_it.internal_idx() == 0 , "qv1_it.internal_idx() == 0");
+        eosio_assert(qv1_it->seq == 0           , "qv1_it->seq == 0");
 
         // Modify qv2
         qv2.value = 3326677;
@@ -330,7 +333,7 @@ public:
         qv2_it = m_q.find<index_key>(qv2.key);
         eosio_assert(qv2_it != m_q.end()        , "qv2_it != m_q.end()");
         eosio_assert(*qv2_it == qv2             , "*qv2_it == qv2");
-        eosio_assert(qv2_it.internal_idx() == 1 , "qv2_it.internal_idx() == 1");
+        eosio_assert(qv2_it->seq == 1           , "qv2_it->seq == 1");
 
         // Modify qv5
         qv5.value = 1;
@@ -338,7 +341,7 @@ public:
         qv5_it = m_q.find<index_key>(qv5.key);
         eosio_assert(qv5_it != m_q.end()        , "qv5_it != m_q.end()");
         eosio_assert(*qv5_it == qv5             , "*qv5_it == qv5");
-        eosio_assert(qv5_it.internal_idx() == 4 , "qv5_it.internal_idx() == 4");
+        eosio_assert(qv5_it->seq == 4           , "qv5_it->seq == 4");
 
         // remove top element
         auto opt = m_q.pop();
@@ -365,12 +368,12 @@ public:
         // Add qv6
         queue_value qv6 { 985798, 1264257};
         m_q.push(qv6, payer);
-        eosio_assert(*m_q.top() == qv2, "*m_q.top() == qv2");
+        eosio_assert(*m_q.top() == qv2    , "*m_q.top() == qv2");
         eosio_assert(*(--m_q.end()) == qv6, "*(--m_q.end()) == qv6");
 
         auto qv6_it = m_q.find<index_key>(qv6.key);
         eosio_assert(qv6_it != m_q.end()             , "qv6_it != m_q.end()");
-        eosio_assert(qv6_it.internal_idx() == 5      , "qv6_it.internal_idx() == 5");
+        eosio_assert(qv6_it->seq == 5                , "qv6_it->seq == 5");
         eosio_assert(m_q.contains<index_key>(qv6.key), "m_q.contains<index_key>(qv6.key)");
 
         // Remove qv2
@@ -398,7 +401,7 @@ public:
 
         auto qv7_it = m_q.find<index_key>(qv7.key);
         eosio_assert(qv7_it != m_q.end()             , "qv7_it != m_q.end()");
-        eosio_assert(qv7_it.internal_idx() == 5      , "qv7_it.internal_idx() == 7");
+        eosio_assert(qv7_it->seq == 5                , "qv7_it->seq == 7");
         eosio_assert(m_q.contains<index_key>(qv7.key), "m_q.contains<index_key>(qv7.key)");
 
         // Remove qv3

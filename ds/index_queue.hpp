@@ -11,21 +11,42 @@
 namespace eosram::ds {
     using eosio::multi_index;
 
+    struct index_queue_element 
+    {
+        uint64_t seq;
+        index_queue_element() : seq(0ULL) {}
+        EOSLIB_SERIALIZE(index_queue_element, (seq))
+    };
+
     template<uint64_t QueueName, typename ValueType,  typename... Indices>
     class index_queue
     {
-        struct qe_t
-        {
-            uint64_t idx;
-            ValueType v;
+        static_assert(std::is_base_of<index_queue_element, ValueType>::value, 
+                "ValueType must inherit from index_queue_element!");
 
-            operator ValueType& () { return v; };
-            operator const ValueType& () const { return v; };
-            uint64_t primary_key() const { return idx; }
-            EOSLIB_SERIALIZE(qe_t, (idx)(v));
+        struct qe_t : ValueType
+        {
+            operator ValueType& () { return *this; };
+            operator const ValueType& () const { return *this; };
+            uint64_t primary_key() const { return index_queue_element::seq; }
+            
+            template<typename DataStream>
+            friend DataStream& operator << ( DataStream& ds, const qe_t& t )
+            {
+                ds << static_cast<const ValueType&>(t);
+                return ds;
+            }
+ 
+            template<typename DataStream>
+            friend DataStream& operator >> ( DataStream& ds, qe_t& t )
+            {
+                ds >> static_cast<ValueType&>(t);
+                return ds;
+            } 
         };
+
         using q_t = multi_index<QueueName, qe_t, Indices...>;
-        static constexpr auto max_idx = std::numeric_limits<uint64_t>::max() - 1;
+        static constexpr auto max_seq = std::numeric_limits<uint64_t>::max() - 1;
 
     public:
         struct const_iterator : public std::iterator<std::bidirectional_iterator_tag, const ValueType> 
@@ -42,12 +63,12 @@ namespace eosram::ds {
 
             const ValueType& operator*() const
             {
-                return it_->v; 
+                return *it_; 
             }
 
             const ValueType* operator->() const
             {
-                return &it_->v;
+                return &(*it_);
             }
 
             const_iterator operator++(int)
@@ -78,7 +99,7 @@ namespace eosram::ds {
 
             uint64_t internal_idx() const
             {
-                return it_->idx;
+                return it_->seq;
             }
 
         private:
@@ -124,9 +145,22 @@ namespace eosram::ds {
             return find<IndexName>(key) != end();
         }
 
+        template<typename ...Args>
+        void emplace(account_name payer, Args&& ... args) 
+        {
+            push(ValueType{ std::forward<Args>(args)... }, payer);
+        }
+
         bool empty() const
         {
             return qi_.begin() == qi_.end();
+        }
+
+        const_iterator erase(const_iterator it)
+        {
+            auto rit = qi_.erase(it);
+            eosio_assert(it.get_underlying_it() != qi_.end(), "Queue element was not erased properly!");
+            return rit;
         }
 
         template<uint64_t IndexName, typename Key>
@@ -150,24 +184,13 @@ namespace eosram::ds {
             return qi_.get_scope();
         }
 
-        template<typename ...Args>
-        void emplace(account_name payer, Args&& ... args) 
-        {
-            push(ValueType{std::forward<Args>(args)...}, payer);
-        }
-
-        const_iterator erase(const_iterator it)
-        {
-            auto rit = qi_.erase(it);
-            eosio_assert(it.get_underlying_it() != qi_.end(), "Queue element was not erased properly!");
-            return rit;
-        }
-
         void modify(const_iterator it, ValueType value, account_name payer) 
         {
             eosio_assert(it != end(), "Cannot modify index_queue element, invalid iterator!");
             qi_.modify(it, payer, [&](auto& qe) {
-                qe.v = std::move(value);
+                auto seq = qe.seq;
+                qe = static_cast<qe_t&&>(std::move(value));
+                qe.seq = seq;
             });
         }
 
@@ -177,7 +200,7 @@ namespace eosram::ds {
             auto it = qi_.begin();
             if(it != qi_.end()) 
             {
-                v = std::move(it->v);
+                v = std::move(*it);
                 erase(it);
             }
 
@@ -186,17 +209,17 @@ namespace eosram::ds {
 
         void push(ValueType value, account_name payer)
         {
-            uint64_t idx = 0;
+            uint64_t seq = 0;
             auto it = qi_.rbegin();
             if(it != qi_.rend()) 
             {
-                idx = it->idx + 1;
-                eosio_assert(idx < max_idx, "Cannot push element to queue, idx is at max limit");
+                seq = it->seq + 1;
+                eosio_assert(seq < max_seq, "Cannot push element to queue, seq is at max limit");
             }
 
             qi_.emplace(payer, [&](auto& qe) {
-                qe.idx = idx;
-                qe.v = std::move(value);
+                qe = static_cast<qe_t&&>(std::move(value));
+                qe.seq = seq;
             });
         }
 
