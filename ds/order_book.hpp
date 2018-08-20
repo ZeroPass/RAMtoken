@@ -108,14 +108,24 @@ namespace eosram::ds {
     struct buy_order_book : public order_book
     {
         buy_order_book(account_name owner) :
-            order_book(owner, EOS_TOKEN_CONTRACT)
+            order_book(owner, get_scope())
         {}
+
+        static scope_name get_scope() 
+        {
+            return EOS_TOKEN_CONTRACT;
+        }
     };
 
     struct sell_order_book : public order_book
     {
         sell_order_book(account_name owner) :
-            order_book(owner, RAM_TOKEN_CONTRACT)
+            order_book(owner, get_scope())
         {}
+
+        static scope_name get_scope() 
+        {
+            return RAM_TOKEN_CONTRACT;
+        }
     };
 }
