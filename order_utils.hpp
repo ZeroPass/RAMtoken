@@ -61,4 +61,24 @@ namespace eosram {
     static bool is_sell_order(const ds::order_t& order) {
         return order.value.symbol == RAM_SYMBOL;
     }
+
+    /** 
+    * Updates order in book if the value of order is > 0, 
+    * otherwise order is removed from book.
+    * 
+    * @param reference to order_book
+    * @param const reference to order
+    * @returns True if order was removed, else False.
+    */
+    static bool update_or_erase_order(ds::order_book& book, const ds::order_t& order)
+    {
+        if(order.value.amount > 0) 
+        {
+            book.modify(order, order.trader);
+            return false;
+        }
+
+        book.erase(order);
+        return true;
+    }
 }
