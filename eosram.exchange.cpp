@@ -339,7 +339,9 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
     LOG_DEBUG("Order expired id= %", order.id);
 
     book.erase(order);
-    if(order.convert_on_expire) // Buy/Sell RAM token on system ram market
+
+    // Buy/Sell RAM token on system ram market
+    if(order.convert_on_expire && order.value.amount > 0)
     {
         ram_market rm;
         const auto price = rm.get_ramprice();
@@ -365,11 +367,14 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             );
 
             // Transfer token and fees
-            std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
-            transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
+            if(da.value.amount > 0)
+            {
+                std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
+                transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
+            }
 
             if(da.fee.amount > 0) {
-                transfer_token(_self, fee_recipient(), ram_asset(da.fee), "RAM token issuance fee");
+                transfer_token(_self, fee_recipient(), ram_asset(da.fee), "RAM token issuance and transfer fee");
             }
         }
 
@@ -395,24 +400,36 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             );
 
             // Transfer token and fees
-            std::string memo = gen_trade_memo(order.value, da.value, price);
-            transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
+            if(da.value.amount > 0)
+            {
+                std::string memo = gen_trade_memo(order.value, da.value, price);
+                transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
+            }
 
             if(da.fee.amount > 0) {
-                transfer_token(_self, fee_recipient(), eos_asset(da.fee), "RAM token burn fee");
+                transfer_token(_self, fee_recipient(), eos_asset(da.fee), "RAM token burn and transfer fee");
             }
         }
-    } 
-    else // Return assets back to trader's account
+    }
+    // Return assets back to trader's account
+    else if(!order.convert_on_expire)
     {
+        LOG_DEBUG("Returning order's asset back to user");
         require_recipient(order.trader);
-        transfer_token(_self, order.trader, to_token(order.value), std::move(reason));
+        auto da = deduct_trade_and_transfer_fee(to_token(order.value), order.trader, no_fee);
+
+        if(da.value.amount > 0) {
+            transfer_token(_self, order.trader, to_token(da.value), std::move(reason));
+        }
+
+        if(da.fee.amount > 0) {
+            transfer_token(_self, fee_recipient(), eos_asset(da.fee), "Transfer fee");
+        }
     }
 }
 
 void exchange::issue_ram_token(asset amount)
 {
-    LOG_DEBUG("trace: exchange::issue_ram_token: amount=%", amount);
     std::string memo = "Issuing RAM token: " + to_string(amount);
     dispatch_inline(RAM_TOKEN_CONTRACT, N(issue),
         {{ _self, N(active) }}, std::make_tuple(_self, amount, std::move(memo)));
@@ -420,7 +437,6 @@ void exchange::issue_ram_token(asset amount)
 
 void exchange::burn_ram_token(asset amount)
 {
-    LOG_DEBUG("trace: exchange::burn_ram_token: amount=%", amount);
     std::string memo = "Burning RAM token: " + to_string(amount);
     dispatch_inline(RAM_TOKEN_CONTRACT, N(burn),
         {{ _self, N(active) }}, std::make_tuple(amount, std::move(memo)));
