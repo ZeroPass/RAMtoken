@@ -20,7 +20,15 @@ namespace eosram {
     static deducted_amount deduct_fee(asset amount, Lambda&& fee_f)
     {
         auto fee = fee_f(amount);
-        amount -= fee;
+        if(fee > amount) 
+        {
+            fee = amount;
+            amount.amount = 0;
+        }
+        else {
+            amount -= fee;
+        }
+
         return { amount, fee };
     }
 
