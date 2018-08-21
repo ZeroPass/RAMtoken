@@ -119,7 +119,7 @@ void exchange::cancel(account_name account, transaction_id_type txid, asset valu
 
 void exchange::execute_order(order_id_t order_id)
 {
-    auto buy_book = get_order_book_of(order_id);    
+    auto buy_book = get_order_book_of(order_id);
     auto buy_order = std::move(*buy_book.find(order_id));
     if(has_order_expired(buy_order)) 
     {
@@ -136,8 +136,7 @@ void exchange::execute_order(order_id_t order_id)
     }();
 
     auto sell_order_it = sell_book.top();
-
-    uint32_t limit = 5;
+    uint32_t limit = order_execution_limit;
     while(limit --> 0 && 
           buy_order.value.amount > 0 && 
           sell_order_it != sell_book.end())
@@ -163,11 +162,11 @@ void exchange::execute_order(order_id_t order_id)
         }
     }
 
-    // 
-    if(buy_order.value.amount > 0 && 
+    // Execute another order loop?
+    if(buy_order.value.amount > 0 &&
        sell_order_it != sell_book.end())
     {
-        constexpr uint32_t delay_exec = 5;
+        constexpr uint32_t delay_exec = order_execution_delay;
         order_timer t(timer_id(buy_order.id, N(execute_order)));
         t.set_permission(buy_order.trader, N(active));
         t.set_callback(_self, N(execute_order), buy_order.id);
@@ -189,10 +188,26 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 
     const auto o2_value_in_o1_tkn = convert(o2.value, o1.value.symbol);
     asset o2_receive_amount = min_asset(o1.value, o2_value_in_o1_tkn);
-    asset o1_receive_amount = convert(o2_receive_amount, o2.value.symbol);
+    asset o1_receive_amount = [&]() {
+        if(o2_receive_amount == o2_value_in_o1_tkn) {
+            return o2.value;
+        }
+        return convert(o1.value, o2.value.symbol);
+    }();
 
-    deduct_fee_and_transfer(o1.trader, to_token(o1_receive_amount), "gen_trade_memo()");
-    deduct_fee_and_transfer(o2.trader, to_token(o2_receive_amount), "gen_trade_memo()");
+    LOG_DEBUG("o1 value:% o2 value:%", o1.value, o2.value);
+    LOG_DEBUG("o2_value_in_o1_tkn:%", o2_value_in_o1_tkn);
+    LOG_DEBUG("o1_receive_amount:%", o1_receive_amount);
+    LOG_DEBUG("o2_receive_amount:%", o2_receive_amount);
+
+    const auto price =rm.get_ramprice();
+    deduct_fee_and_transfer(o1.trader, to_token(o1_receive_amount),
+        gen_trade_memo(o2_receive_amount, o1_receive_amount, price)
+    );
+
+    deduct_fee_and_transfer(o2.trader, to_token(o2_receive_amount),
+        gen_trade_memo(o1_receive_amount, o2_receive_amount, price)
+    );
 
     o1.value -= o2_receive_amount;
     o2.value -= o1_receive_amount;
@@ -200,14 +215,18 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 
 void exchange::deduct_fee_and_transfer(account_name recipient, const asset& amount, std::string memo)
 {
+    LOG_DEBUG("deduct_fee_and_transfer: In transfer amount: %", amount);
     deducted_amount da;
     if(amount.symbol == EOS_SYMBOL) {
-        da = deduct_fee(amount, buy_fee);
+        da = deduct_trade_and_transfer_fee(to_token(amount), recipient, buy_fee);
     } else {
-        da = deduct_fee(amount, sell_fee);
+        da = deduct_trade_and_transfer_fee(to_token(amount), recipient, sell_fee);
     }
 
-    transfer_token(_self, recipient, to_token(da.value), std::move(memo));
+    if(da.value.amount > 0) {
+        transfer_token(_self, recipient, to_token(da.value), std::move(memo));
+    }
+
     if(da.fee.amount > 0){
         transfer_token(_self, fee_recipient(), to_token(da.fee), "Trade fee");
     }
@@ -270,7 +289,7 @@ void exchange::make_order_and_execute(ds::order_book& book, account_name trader,
     DEBUG_ASSERT(order_exists(order_id), "make_sell_order: failed to insert order into order book!");
     LOG_DEBUG("New order was inserted into order book order_id=%", order_id);
 
-    // Start order expiration timer
+    // Start order expiration timer and execute order
     start_ttl_timer(order_id, ttl, trader, "Order has expired"s);
     execute_order(order_id);
 }
@@ -282,11 +301,11 @@ void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, account_name a
     asset_assert(value, EOS_SYMBOL, "The value must be in EOS!");
     eosio_assert(value >= cancel_order_fee(value), "Fee starvation!");
 
-    // Get order id and order book
+    // Get order book
     auto order_id = get_order_id(cmd.txid());
     auto order_book = get_order_book_of(order_id);
 
-    // Verify caller is also order owner
+    // Verify caller is the owner of order
     auto order = *order_book.find(order_id);
     require_auth(order.trader);
 
@@ -346,7 +365,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             );
 
             // Transfer token and fees
-            std::string memo = gen_trade_memo(true, out_ram_quantity, price);
+            std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
             transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
 
             if(da.fee.amount > 0) {
@@ -376,7 +395,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             );
 
             // Transfer token and fees
-            std::string memo = gen_trade_memo(false, order.value, price);
+            std::string memo = gen_trade_memo(order.value, da.value, price);
             transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
 
             if(da.fee.amount > 0) {
@@ -444,7 +463,6 @@ void exchange::on_notification(uint64_t sender, uint64_t action)
 
 void exchange::on_transfer(account_name from, account_name to, asset quantity, std::string memo)
 {
-    print("in eosram.exchange::on_transfer");
     if (from != EOSIO_RAM_CONTRACT && to == _self)
     {
         eosio_assert(quantity.is_valid(), "Invalid quantity in transfer" );
