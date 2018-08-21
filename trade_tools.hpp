@@ -42,7 +42,10 @@ namespace eosram {
     static deducted_amount deduct_trade_and_transfer_fee(const extended_asset& amount, account_name recipient, Fee&& fee_f)
     {
         auto da = deduct_fee(amount, std::forward<Fee>(fee_f));
-        if(!is_account_owner_of(recipient, amount.get_extended_symbol())) // token transfer fee
+
+         // token transfer fee applys only if recipient is not already
+         // an owner of token he's about to receive.
+        if(!is_account_owner_of(recipient, amount.get_extended_symbol()))
         {
             auto tmp_da = deduct_fee(da.value, token_transfer_fee);
             da.value = tmp_da.value;
