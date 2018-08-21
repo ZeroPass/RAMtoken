@@ -54,6 +54,12 @@ namespace eosram {
         return  fee;
     };
 
+    constexpr auto no_fee = [](const asset& amount) -> asset {
+        auto fee = amount;
+        fee.amount = 0;
+        return  fee;
+    };
+
 
     // ram market fee of system contract (eosio.ram)
     // src: https://github.com/EOSIO/eos/blob/d7a6fd10ac0ab34595068f339f8b3d24a06f1db3/contracts/eosio.system/delegate_bandwidth.cpp#L111
