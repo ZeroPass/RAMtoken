@@ -86,8 +86,12 @@ namespace eosram {
         transfer_token(from, N(active), to, amount, std::move(memo));
     }
 
-    static std::string gen_trade_memo(bool buy, asset amount, asset price) {
-        return (buy ? "Bought " : "Sold ") + to_string(amount) + " tokens @" + to_string(price) + "/KiB";
+    static std::string gen_trade_memo(const asset& sold_amnt, const asset& receive_amnt, asset price) 
+    {
+        const bool is_buy = sold_amnt.symbol == EOS_SYMBOL;
+        return ( is_buy ? "Bought " : "Sold ") 
+            + (is_buy ? to_string(receive_amnt) : to_string(sold_amnt)) 
+            + " tokens @" + to_string(price) + "/KiB";
     }
 
     static asset min_asset(const asset& a1, const asset& a2)
