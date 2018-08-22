@@ -36,7 +36,91 @@ static bool stop_ttl_timer(order_id_t order_id) {
 
 void exchange::test(account_name payer, uint64_t limit, std::string memo)
 {
-    
+    //  order_t order { 1234, asset(0'1000), payer, now(), true};
+    //  buy_order_book bbook(_self);
+    //  bbook.push(order, payer);
+    //  handle_expired_order(std::move(bbook), order);
+    //  return;
+
+    buy_order_book bbook(_self);
+    auto it = bbook.begin();
+    while(it != bbook.end() && limit --> 0) {
+        
+        auto it2 = it;
+   //     transfer_token(_self, it->trader, to_token(it->value), "Order book sweeping, return order asset");
+ //       it = bbook.erase(it2);
+
+        //("Order id: %\n", it2->id);
+        print_f("Order_id: % value: % trader: % exp_time: % exec_on_exp: %\n", it->id, it->value, name{it->trader}, it->expiration_time, it->convert_on_expire);
+        it++;
+    }
+
+    return;
+//     transaction out;
+//         out.delay_sec = 5UL;
+//         out.actions.emplace_back
+//         (
+//             permission_level{payer, N(active)},
+//             _self,                              // account
+//             N(order_expired),                    // function
+//             std::make_tuple(order_id_t(1234))   // args
+//         );
+
+//         out.send((static_cast<uint128_t>(payer) << 64) | 8,
+//             payer, /*replace_existing=*/ true);
+//             return;
+// //     auto num = str_to_num(memo);
+// //    // print("got number: ",  num);
+// //     const auto memo3 = num_to_str(num);
+// //     print("\n convert back to string: ", memo3.c_str());
+// //     eosio_assert(memo == memo3, "not valid num");
+  
+//     transaction_id_type txid;
+//     uint64_t order_id = 0;
+//     if(memo.empty())
+//     {
+//         txid = get_txid();
+//         order_id = get_order_id(txid);
+//     }
+      
+
+//     // //  printhex(&txid, sizeof(txid));
+//     // //  print("\n");
+//     // //  print(order_id);
+//     // //  printhex(&order_id, sizeof(order_id));
+
+//     // // auto hex_txid = to_hex(txid);
+//     // // auto txid2 = from_hex<transaction_id_type>(hex_txid);
+//     // // eosio_assert(memcmp(&txid, &txid2, sizeof(txid))== 0, "checksum missmatch");
+//     // // print("\n", hex_txid.c_str());
+
+//     bool no_arg = memo.empty();
+//     // if(no_arg)
+//     // {
+//     //     memo = memo_cmd_cancel_order(txid).to_string();
+//     //     print("\nmemo: ", memo);
+//     // }
+
+//     memo_parser parser(memo);
+//     if(parser.memo_cmd_type() == memo_cmd_cancel_order::type())
+//     {
+//         auto cancel_cmd = parser.get<memo_cmd_cancel_order>();
+//         auto txid2 = cancel_cmd.txid();
+//         print("\nparsed txid: ");
+//         printhex(&txid2, sizeof(txid2));
+
+//         if(no_arg) {
+//             eosio_assert(order_id == get_order_id(txid2), "generated memo is different than parsed");
+//         } else {
+//             eosio_assert(memo == cancel_cmd.to_string(), "generated memo is different than argument");
+//         }
+//     }
+//     else {// make order 
+//         auto make_order_cmd = parser.get<memo_cmd_make_order>();
+//         print_f("\nparsed make order memo: TTL=% Convert=%", make_order_cmd.ttl(), make_order_cmd.convert_on_expire());
+//         print_f("\ngenerated memo: %", make_order_cmd.to_string());
+//         // eosio_assert(memo == make_order_cmd.to_string(), "generated memo is different than argument");
+//     }
 
 }
 
@@ -201,34 +285,34 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
     LOG_DEBUG("o2_receive_amount:%", o2_receive_amount);
 
     const auto price =rm.get_ramprice();
-    deduct_fee_and_transfer(o1.trader, to_token(o1_receive_amount),
-        gen_trade_memo(o2_receive_amount, o1_receive_amount, price)
+    deduct_fee_and_transfer(o1.trader, to_token(o1_receive_amount), trade_fee,
+        gen_trade_memo(o2_receive_amount, o1_receive_amount, price),
+        "Trade fee"
     );
 
-    deduct_fee_and_transfer(o2.trader, to_token(o2_receive_amount),
-        gen_trade_memo(o1_receive_amount, o2_receive_amount, price)
+    deduct_fee_and_transfer(o2.trader, to_token(o2_receive_amount), trade_fee,
+        gen_trade_memo(o1_receive_amount, o2_receive_amount, price),
+        "Trade fee"
     );
 
     o1.value -= o2_receive_amount;
     o2.value -= o1_receive_amount;
 }
 
-void exchange::deduct_fee_and_transfer(account_name recipient, const asset& amount, std::string memo)
+template<typename Lambda>
+void exchange::deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info)
 {
     LOG_DEBUG("deduct_fee_and_transfer: In transfer amount: %", amount);
-    deducted_amount da;
-    if(amount.symbol == EOS_SYMBOL) {
-        da = deduct_trade_and_transfer_fee(to_token(amount), recipient, buy_fee);
-    } else {
-        da = deduct_trade_and_transfer_fee(to_token(amount), recipient, sell_fee);
-    }
+    deducted_amount da = deduct_trade_and_transfer_fee(
+        to_token(amount), recipient, std::forward<Lambda>(fee)
+    );
 
     if(da.value.amount > 0) {
-        transfer_token(_self, recipient, to_token(da.value), std::move(memo));
+        transfer_token(_self, recipient, to_token(da.value), std::move(transfer_memo));
     }
 
     if(da.fee.amount > 0){
-        transfer_token(_self, fee_recipient(), to_token(da.fee), "Trade fee");
+        transfer_token(_self, fee_recipient(), to_token(da.fee), std::move(fee_info));
     }
 }
 
@@ -361,21 +445,26 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             // Issue RAM token
             issue_ram_token(out_ram_quantity);
             
-            // Dduct token issuance and transfer fee
-            auto da = deduct_trade_and_transfer_fee(
-                out_ram_quantity, order.trader, issue_token_fee
+            // Transfer order asset back to trader
+            deduct_fee_and_transfer(order.trader, ram_asset(out_ram_quantity), issue_token_fee,
+                gen_trade_memo(order.value, out_ram_quantity, price),
+                "RAM token issuance and transfer fee"
             );
+            // Dduct token issuance and transfer fee
+            // auto da = deduct_trade_and_transfer_fee(
+            //     out_ram_quantity, order.trader, issue_token_fee
+            // );
 
-            // Transfer token and fees
-            if(da.value.amount > 0)
-            {
-                std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
-                transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
-            }
+            // // Transfer token and fees
+            // if(da.value.amount > 0)
+            // {
+            //     std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
+            //     transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
+            // }
 
-            if(da.fee.amount > 0) {
-                transfer_token(_self, fee_recipient(), ram_asset(da.fee), "RAM token issuance and transfer fee");
-            }
+            // if(da.fee.amount > 0) {
+            //     transfer_token(_self, fee_recipient(), ram_asset(da.fee), "RAM token issuance and transfer fee");
+            // }
         }
 
         // Sell RAM on ram market, burn RAM token and transfer EOS to user
@@ -394,37 +483,49 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             // Reduce issued RAM token supply
             burn_ram_token(order.value);
             
-            // Decuct token supply reduction and transfer fee
-            auto da = deduct_trade_and_transfer_fee(
-                out_eos_quantity, order.trader, burn_token_fee
+            // Transfer token back to trader
+            deduct_fee_and_transfer(order.trader, eos_asset(out_eos_quantity), issue_token_fee,
+                gen_trade_memo(order.value, out_eos_quantity, price),
+                "RAM token burn and transfer fee"
             );
+            
+            // // Decuct token supply reduction and transfer fee
+            // auto da = deduct_trade_and_transfer_fee(
+            //     out_eos_quantity, order.trader, burn_token_fee
+            // );
 
-            // Transfer token and fees
-            if(da.value.amount > 0)
-            {
-                std::string memo = gen_trade_memo(order.value, da.value, price);
-                transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
-            }
+            // // Transfer token and fees
+            // if(da.value.amount > 0)
+            // {
+            //     std::string memo = gen_trade_memo(order.value, da.value, price);
+            //     transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
+            // }
 
-            if(da.fee.amount > 0) {
-                transfer_token(_self, fee_recipient(), eos_asset(da.fee), "RAM token burn and transfer fee");
-            }
+            // if(da.fee.amount > 0) {
+            //     transfer_token(_self, fee_recipient(), eos_asset(da.fee), "RAM token burn and transfer fee");
+            // }
         }
     }
     // Return assets back to trader's account
     else if(!order.convert_on_expire)
     {
-        LOG_DEBUG("Returning order's asset back to user");
+        LOG_DEBUG("Returning order's asset back to trader");
         require_recipient(order.trader);
-        auto da = deduct_trade_and_transfer_fee(to_token(order.value), order.trader, no_fee);
 
-        if(da.value.amount > 0) {
-            transfer_token(_self, order.trader, to_token(da.value), std::move(reason));
-        }
+        deduct_fee_and_transfer(order.trader, to_token(order.value), no_fee, 
+            std::move(reason),
+            "Transfer fee"
+        );
 
-        if(da.fee.amount > 0) {
-            transfer_token(_self, fee_recipient(), eos_asset(da.fee), "Transfer fee");
-        }
+        // auto da = deduct_trade_and_transfer_fee(to_token(order.value), order.trader, no_fee);
+
+        // if(da.value.amount > 0) {
+        //     transfer_token(_self, order.trader, to_token(da.value), std::move(reason));
+        // }
+
+        // if(da.fee.amount > 0) {
+        //     transfer_token(_self, fee_recipient(), eos_asset(da.fee), "Transfer fee");
+        // }
     }
 }
 

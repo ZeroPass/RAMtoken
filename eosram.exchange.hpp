@@ -77,7 +77,9 @@ namespace eosram {
         void make_order_and_execute(ds::order_book&, account_name trader, asset value, ttl_t ttl, bool exec_on_expire);
         void execute_order(order_id_t order_id);
         void execute_trade(ds::order_t& o1, ds::order_t& o2);
-        void deduct_fee_and_transfer(account_name recipient, const asset& amount, std::string memo);
+
+        template<typename Lambda>
+        void deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
 
         void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
         void issue_ram_token(asset amount);

@@ -8,20 +8,20 @@
 namespace eosram {
     using namespace eosio;
 
-    constexpr auto buy_fee = [](const asset& amount) -> asset {
+    constexpr auto no_fee = [](const asset& amount) -> asset {
+        auto fee = amount;
+        fee.amount = 0;
+        return  fee;
+    };
+
+    constexpr auto trade_fee = [](const asset& amount) -> asset {
         auto fee = amount;
         fee.amount = std::max((fee.amount + 999) / 1000LL, 1LL); // 0.1% fee (rounded up)
         return  fee;
     };
 
-    constexpr auto sell_fee = [](const asset& a) -> asset {
-        return buy_fee(a);
-    };
-
     constexpr auto issue_token_fee = [](const asset& a) -> asset {
-        asset fee = a;
-        fee.amount = 0;
-        return fee;
+        return no_fee(a);
     };
 
     constexpr auto burn_token_fee = [](const asset& a) -> asset {
@@ -51,12 +51,6 @@ namespace eosram {
 
     constexpr auto expedite_cancel_order_fee = [](const asset& amount) -> asset {
         auto fee = asset(1'0000, EOS_SYMBOL);
-        return  fee;
-    };
-
-    constexpr auto no_fee = [](const asset& amount) -> asset {
-        auto fee = amount;
-        fee.amount = 0;
         return  fee;
     };
 
