@@ -6,7 +6,10 @@
 #include "fees.hpp"
 
 #include "ds/ram_market.hpp"
+
+#ifndef ABIGEN
 #include "token/eosram.token.hpp"
+#endif
 
 namespace eosram {
     using namespace eosio;
@@ -34,8 +37,12 @@ namespace eosram {
 
     static bool is_account_owner_of(account_name account, const eosio::extended_symbol& tkn_sym)
     {
+    #ifndef ABIGEN
         token t(tkn_sym.contract);
         return t.has_balance(account, tkn_sym);
+    #else
+        return false;
+    #endif
     }
 
     template<typename Fee>
