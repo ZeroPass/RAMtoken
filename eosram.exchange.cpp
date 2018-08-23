@@ -11,8 +11,6 @@
 #include "ds/order_book.hpp"
 
 
-#include <eosiolib/transaction.hpp>
-
 using namespace eosio;
 using namespace eosram;
 using namespace eosram::ds;
@@ -571,8 +569,8 @@ void exchange::on_notification(uint64_t sender, uint64_t action)
         }
         case N(onerror):
         {
-            auto error = onerror::from_current_action();
-            eosio_assert(false, ("timer action error id= " + to_string(timer_id(error.sender_id).order_id())).c_str());
+            eosio_assert(sender == N(eosio), "onerror action's are only valid from the \"eosio\" system account");
+            execute_action(this, &exchange::on_error);
             return;
         }
     }
@@ -628,6 +626,21 @@ void exchange::on_order_expired(order_id_t order_id, std::string reason)
 
     require_auth(order.trader);
     handle_expired_order(order_book, std::move(order), std::move(reason));
+}
+
+void exchange::on_error(onerror error)
+{
+    timer_id tid(error.sender_id);
+    auto book = get_opt_order_book_of(tid.order_id());
+    if(book.has_value())
+    {
+        LOG_DEBUG("Resending failed tx for order_id: %", tid.order_id());
+
+        auto order = *book->find(tid.order_id());
+        transaction tx = error.unpack_sent_trx();
+        tx.delay_sec = onerror_resend_delay;
+        tx.send(error.sender_id, order.trader);
+    }
 }
 
 order_book exchange::get_order_book_of(order_id_t order_id, const char* error_msg) const

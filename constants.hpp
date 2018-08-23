@@ -20,6 +20,7 @@ namespace eosram {
     static constexpr int32_t  cancel_order_wait_time = min_ttl;
     static constexpr uint32_t order_execution_limit  = 1;       // 1 orders per execution
     static constexpr uint32_t order_execution_delay  = 1;       // 1s
+    static constexpr uint32_t onerror_resend_delay   = 5;       // 5s
 
     static eosio::extended_symbol eos_symbol() {
         return eosio::extended_symbol(EOS_SYMBOL, EOS_TOKEN_CONTRACT);

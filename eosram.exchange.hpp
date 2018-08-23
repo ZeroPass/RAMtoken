@@ -1,6 +1,7 @@
 
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
+#include <eosiolib/transaction.hpp>
 #include <eosiolib/types.hpp>
 
 #include "constants.hpp"
@@ -21,6 +22,7 @@ namespace eosram {
     public:
         exchange(account_name self);
 
+    //public_api:
         // @abi action
         void test(account_name payer, uint64_t limit, std::string memo);
         
@@ -36,7 +38,10 @@ namespace eosram {
         //@abi action
         void cancel(account_name from, transaction_id_type txid, asset value);
 
-        /* Exchange's owner actions */
+        // @abi action
+        void sweep();
+
+    //private_api:
         // @abi action
         void init(account_name fee_recipient);
 
@@ -54,9 +59,6 @@ namespace eosram {
 
         // @abi action
         void clrorders(symbol_type sym, std::string reason);
-
-        // @abi action
-        void sweep();
 
         // signal handler
         void on_notification(uint64_t sender, uint64_t action);
@@ -89,6 +91,7 @@ namespace eosram {
         void on_transfer(account_name from, account_name to, asset quantity, std::string memo);
         void on_payment_received(account_name from, asset quantity, std::string memo);
         void on_order_expired(order_id_t order_id, std::string reason);
+        void on_error(onerror error);
 
         // authorization 
         void require_owner() const;
