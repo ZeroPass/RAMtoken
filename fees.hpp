@@ -45,12 +45,7 @@ namespace eosram {
     };
 
     constexpr auto cancel_order_fee = [](const asset& amount) -> asset {
-        auto fee = asset(0'1000, EOS_SYMBOL);
-        return  fee;
-    };
-
-    constexpr auto expedite_cancel_order_fee = [](const asset& amount) -> asset {
-        auto fee = asset(1'0000, EOS_SYMBOL);
+        auto fee = trade_fee(amount) * 2;
         return  fee;
     };
 

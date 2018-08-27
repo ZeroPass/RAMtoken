@@ -183,20 +183,34 @@ void exchange::sell(account_name seller, asset quantity, ttl_t ttl, bool force_s
     transfer_token(seller, _self, ram_asset(quantity), std::move(memo_cmd));
 }
 
-void exchange::cancel(account_name account, transaction_id_type txid, asset value)
+void exchange::cancel(order_id_t order_id)
 {
-    require_auth(account);
-    eosio_assert(account != _self, "Invalid account name");
-    asset_assert(value, EOS_SYMBOL, "The value must be in EOS.");
+    LOG_DEBUG("Canceling order: %", order_id);
+    require_running();
+    auto order_book = get_order_book_of(order_id);
 
-    auto memo_cmd = memo_cmd_cancel_order(txid);
-    if(value.amount > 0)
-    {
-        auto str_memo_cmd = memo_cmd.to_string();
-        transfer_token(account, _self, eos_asset(value), std::move(str_memo_cmd));
-    } else {
-        execute_memo_cmd(memo_cmd, account, value);
+    // Verify caller is the owner of order
+    auto order = *order_book.find(order_id);
+    require_auth(order.trader);
+
+    // Cancel order and return funds
+    order.expiration_time   = now();
+    order.convert_on_expire = false;
+
+    auto da = deduct_fee(order.value, cancel_order_fee);
+    order.value = da.value;
+
+    if(da.fee.amount > 0) {
+        transfer_token(_self, fee_recipient(), to_token(da.fee), "Cancel order fee");
     }
+
+    stop_ttl_timer(order_id);
+    handle_expired_order(order_book, std::move(order), "Order was canceled");
+}
+
+void exchange::cancelbytxid(transaction_id_type txid)
+{
+    cancel(get_order_id(txid));
 }
 
 void exchange::execute_order(order_id_t order_id)
@@ -300,7 +314,6 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 template<typename Lambda>
 void exchange::deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info)
 {
-    LOG_DEBUG("deduct_fee_and_transfer: In transfer amount: %", amount);
     deducted_amount da = deduct_trade_and_transfer_fee(
         to_token(amount), recipient, std::forward<Lambda>(fee)
     );
@@ -379,40 +392,15 @@ void exchange::make_order_and_execute(ds::order_book& book, account_name trader,
 // Cancel order
 void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, account_name account, asset value)
 {
-    require_running();
-    asset_assert(value, EOS_SYMBOL, "The value must be in EOS!");
-    eosio_assert(value >= cancel_order_fee(value), "Fee starvation!");
-
-    // Get order book
-    auto order_id = get_order_id(cmd.txid());
-    auto order_book = get_order_book_of(order_id);
-
-    // Verify caller is the owner of order
-    auto order = *order_book.find(order_id);
-    require_auth(order.trader);
-
-    // Transfer fee 
-    if(value.amount > 0) {
-        transfer_token(_self, fee_recipient(), to_token(value), "Order cancellation fee");
-    }
-
-    // Cancel order
-    order.expiration_time   = now();
-    order.convert_on_expire = false;
-    stop_ttl_timer(order_id);
-
-    if(value >= expedite_cancel_order_fee(value)) {
-        handle_expired_order(order_book, std::move(order), "Order was canceled");
-    }
-    else 
+    // Tranfer any value back to sender 
+    if(value.amount > 0) 
     {
-        // Update order
-        order.expiration_time += cancel_order_wait_time;
-        order_book.modify(std::move(order), account);
-
-        // Start order expiration timer
-        start_ttl_timer(order_id, cancel_order_wait_time, account, "Order was canceled"s);
+        deduct_fee_and_transfer(account, value, no_fee, 
+            "Returning excesed amount", "Transfer fee"
+        );
     }
+
+    cancelbytxid(cmd.txid());
 }
 
 void exchange::handle_expired_order(order_book& book, order_t order, std::string reason)
@@ -443,26 +431,11 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             // Issue RAM token
             issue_ram_token(out_ram_quantity);
             
-            // Transfer order asset back to trader
+            // Transfer converted funds to trader
             deduct_fee_and_transfer(order.trader, ram_asset(out_ram_quantity), issue_token_fee,
                 gen_trade_memo(order.value, out_ram_quantity, price),
                 "RAM token issuance and transfer fee"
             );
-            // Dduct token issuance and transfer fee
-            // auto da = deduct_trade_and_transfer_fee(
-            //     out_ram_quantity, order.trader, issue_token_fee
-            // );
-
-            // // Transfer token and fees
-            // if(da.value.amount > 0)
-            // {
-            //     std::string memo = gen_trade_memo(order.value, out_ram_quantity, price);
-            //     transfer_token(_self, order.trader, ram_asset(da.value), std::move(memo));
-            // }
-
-            // if(da.fee.amount > 0) {
-            //     transfer_token(_self, fee_recipient(), ram_asset(da.fee), "RAM token issuance and transfer fee");
-            // }
         }
 
         // Sell RAM on ram market, burn RAM token and transfer EOS to user
@@ -481,49 +454,23 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             // Reduce issued RAM token supply
             burn_ram_token(order.value);
             
-            // Transfer token back to trader
+            // Transfer converted funds to trader
             deduct_fee_and_transfer(order.trader, eos_asset(out_eos_quantity), issue_token_fee,
                 gen_trade_memo(order.value, out_eos_quantity, price),
                 "RAM token burn and transfer fee"
             );
-            
-            // // Decuct token supply reduction and transfer fee
-            // auto da = deduct_trade_and_transfer_fee(
-            //     out_eos_quantity, order.trader, burn_token_fee
-            // );
-
-            // // Transfer token and fees
-            // if(da.value.amount > 0)
-            // {
-            //     std::string memo = gen_trade_memo(order.value, da.value, price);
-            //     transfer_token(_self, order.trader, eos_asset(da.value), std::move(memo));
-            // }
-
-            // if(da.fee.amount > 0) {
-            //     transfer_token(_self, fee_recipient(), eos_asset(da.fee), "RAM token burn and transfer fee");
-            // }
         }
     }
-    // Return assets back to trader's account
+    // Return remaining order's funds back to trader
     else if(!order.convert_on_expire)
     {
-        LOG_DEBUG("Returning order's asset back to trader");
-        require_recipient(order.trader);
+        LOG_DEBUG("Returning remaining order's funds back to order issuer");
+       // require_recipient(order.trader); // Critical Bug: https://github.com/EOSIO/eos/issues/4824 
 
         deduct_fee_and_transfer(order.trader, to_token(order.value), no_fee, 
             std::move(reason),
             "Transfer fee"
         );
-
-        // auto da = deduct_trade_and_transfer_fee(to_token(order.value), order.trader, no_fee);
-
-        // if(da.value.amount > 0) {
-        //     transfer_token(_self, order.trader, to_token(da.value), std::move(reason));
-        // }
-
-        // if(da.fee.amount > 0) {
-        //     transfer_token(_self, fee_recipient(), eos_asset(da.fee), "Transfer fee");
-        // }
     }
 }
 
@@ -724,7 +671,7 @@ void exchange::clrorders(symbol_type sym, std::string reason)
 
     while(it != book.end() && limit --> 0)
     {
-        transfer_token(_self, it->trader, to_token(it->value), reason);
+        deduct_fee_and_transfer(it->trader, it->value, no_fee, std::move(reason), "Transfer fee");
         it = book.erase(it);
     }
 
@@ -748,4 +695,4 @@ void exchange::require_running() const
     eosio_assert(is_running(), "RAM token exchange is stopped!");
 }
 
-EOSIO_ABI( eosram::exchange, (init)(buy)(sell)(cancel)(start)(stop)(setfeerecip)(clrallorders)(clrorders)(test) )
+EOSIO_ABI( eosram::exchange, (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(clrallorders)(clrorders)(test) )

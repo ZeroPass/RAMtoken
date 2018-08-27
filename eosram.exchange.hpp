@@ -35,8 +35,11 @@ namespace eosram {
         //@abi action
         void sell(account_name seller, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
 
+         //@abi action
+        void cancel(order_id_t order_id);
+
         //@abi action
-        void cancel(account_name from, transaction_id_type txid, asset value);
+        void cancelbytxid(transaction_id_type txid);
 
         // @abi action
         void sweep();
