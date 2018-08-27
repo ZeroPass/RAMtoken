@@ -249,18 +249,16 @@ void exchange::execute_order(order_id_t order_id)
 
         execute_trade(buy_order, sell_order);
 
-        if(update_or_erase_order(buy_book, buy_order)) {
-            stop_ttl_timer(buy_order.id);
-        }
-
         if(update_or_erase_order(sell_book, sell_order)) {
-            stop_ttl_timer(sell_order.id);
+            stop_ttl_timer(sell_order.id); // Order was deleted, stop it's ttl timer
         }
     }
 
+    if(update_or_erase_order(buy_book, buy_order)) {
+        stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
+    }
     // Execute another order loop?
-    if(buy_order.value.amount > 0 &&
-       sell_order_it != sell_book.end())
+    else if(sell_order_it != sell_book.end())
     {
         constexpr uint32_t delay_exec = order_execution_delay;
         order_timer t(timer_id(buy_order.id, N(execute_order)));
