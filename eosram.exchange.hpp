@@ -85,6 +85,7 @@ namespace eosram {
 
         template<typename Lambda>
         void deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
+        void make_transfer(account_name recipient, const asset& amount, std::string memo);
 
         void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
         void issue_ram_token(asset amount);
