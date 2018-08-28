@@ -2,13 +2,12 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/core_symbol.hpp>
 
-#include "constants.hpp"
 #include "fees.hpp"
-
 #include "ds/ram_market.hpp"
+#include "../constants.hpp"
 
 #ifndef ABIGEN
-#include "token/eosram.token.hpp"
+#include "../token/eosram.token.hpp"
 #endif
 
 namespace eosram {

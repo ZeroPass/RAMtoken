@@ -4,7 +4,7 @@
 #include <eosiolib/transaction.hpp>
 #include <eosiolib/types.hpp>
 
-#include "constants.hpp"
+#include "../constants.hpp"
 #include "ds/ram_market.hpp"
 #include "ds/order_book.hpp"
 #include "ds/memo/memo.hpp"

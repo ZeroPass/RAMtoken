@@ -1,7 +1,3 @@
-/**
- *  @file
- *  @copyright defined in eos/LICENSE.txt
- */
 #pragma once
 
 #include <eosiolib/asset.hpp>
@@ -25,15 +21,7 @@ namespace eosram {
 
         static symbol_type symbol();
 
-        // @abi action
-        void create(account_name issuer);
-
-        // @abi action
-        void issue(account_name to, asset quantity, string memo);
-
-        // @abi action
-        void burn(asset quantity, string memo);
-
+    //public_api:
         // @abi action
         void signup(account_name account);
 
@@ -43,6 +31,16 @@ namespace eosram {
         inline asset get_supply(symbol_type sym) const;
         inline asset get_balance(account_name owner, symbol_type sym) const;
         inline bool has_balance(account_name owner, symbol_type sym) const;
+
+    //private_api:
+        // @abi action
+        void create(account_name issuer);
+
+        // @abi action
+        void issue(account_name to, asset quantity, string memo);
+
+        // @abi action
+        void burn(asset quantity, string memo);
 
     private:
         // @abi table accounts i64

@@ -1,6 +1,5 @@
 #include "eosram.token.hpp"
 #include "../constants.hpp"
-#include "../log.hpp"
 #include <utility>
 
 using namespace eosram;
@@ -100,7 +99,6 @@ void token::burn(asset quantity, string memo)
 void token::signup(account_name account)
 {
     auto null_value = asset(0, symbol());
-    DEBUG_ASSERT(null_value.amount == 0, "Quantity exceeds signup allowance!"); // Sanity check
 
     auto sym_name = null_value.symbol.name();
     stats statstable( _self, sym_name );

@@ -2,8 +2,8 @@
 #include <eosiolib/asset.hpp>
 #include <algorithm>
 
-#include "constants.hpp"
 #include "ds/ram_market.hpp"
+#include "../constants.hpp"
 
 namespace eosram {
     using namespace eosio;

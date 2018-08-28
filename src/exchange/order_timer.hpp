@@ -2,7 +2,8 @@
 #include <eosiolib/transaction.h>
 #include <eosiolib/transaction.hpp>
 #include <utility>
-#include "types.hpp"
+
+#include "../types.hpp"
 
 
 namespace eosram {
