@@ -16,9 +16,10 @@
 namespace eosram {
     static constexpr int32_t  min_ttl                = 1;       // 1sec
     static constexpr ttl_t    infinite_ttl           = -1;
-    static constexpr int64_t  min_ram_trade_amount   = 1024;    // 1KiB
+    static constexpr int64_t  transfer_fee_in_ram    = 250;
+    static constexpr int64_t  min_ram_trade_amount   = transfer_fee_in_ram;
     static constexpr int32_t  cancel_order_wait_time = min_ttl;
-    static constexpr uint32_t order_execution_limit  = 1;       // 1 orders per execution
+    static constexpr uint32_t order_execution_limit  = 1;       // 1 order per execution
     static constexpr uint32_t order_execution_delay  = 1;       // 1s
     static constexpr uint32_t onerror_resend_delay   = 5;       // 5s
 

@@ -30,7 +30,6 @@ namespace eosram {
 
     constexpr auto token_transfer_fee = [](const asset& amount) -> asset 
     {
-        constexpr const int64_t transfer_fee_in_ram = 250;
         auto fee = amount;
         if(fee.symbol == EOS_SYMBOL) 
         {
