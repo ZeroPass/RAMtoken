@@ -1,7 +1,7 @@
 # Compiled Object files
-*.abi
-*.wasm
-*.wast
+src/**/*.abi
+src/**/*.wasm
+src/**/*.wast
 
 *.json
 
