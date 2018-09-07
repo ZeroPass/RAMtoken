@@ -11,10 +11,11 @@ namespace eosram::ds {
     //@abi table state
     struct state_t
     {
-        account_name fee_account;
+        account_name fee_account = 0;
+        account_name transfer_proxy = 0;
         bool exchange_running = false;
 
-        EOSLIB_SERIALIZE(state_t, (fee_account)(exchange_running))
+        EOSLIB_SERIALIZE(state_t, (fee_account)(transfer_proxy)(exchange_running))
     };
 
     struct exchange_state : public singleton<N(state), state_t>

@@ -59,6 +59,22 @@ namespace eosram {
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }
 
+    static void inline_transfer(account_name proxy, eosio::permission_level perm, account_name from, account_name to, extended_asset amount, std::string memo)
+    {
+        eosio::action ta;
+        ta.account = proxy ? proxy : amount.contract;
+        ta.name = N(transfer);
+        ta.authorization.emplace_back(from, N(active));
+        ta.data = [&]{
+            if(proxy) {
+                return pack(std::make_tuple(from, to, std::move(amount), std::move(memo)));
+            }
+            return pack(std::make_tuple(from, to, static_cast<asset&&>(std::move(amount)), std::move(memo)));
+        }();
+
+        ta.send();
+    }
+
     /* Returns current transaction id */
     static transaction_id_type get_txid() 
     {

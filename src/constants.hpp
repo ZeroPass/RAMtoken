@@ -26,36 +26,44 @@ namespace eosram {
         return eosio::extended_symbol(EOS_SYMBOL, EOS_TOKEN_CONTRACT);
     }
 
-    static eosio::extended_asset eos_asset(eosio::asset asset) 
+    static eosio::extended_asset eos_token(eosio::asset asset) 
     {
         eosio_assert(asset.symbol == EOS_SYMBOL, "Invalid EOS asset!");
         return eosio::extended_asset(asset, EOS_TOKEN_CONTRACT);
+    }
+
+    static eosio::extended_asset eos_token(int64_t amount) {
+        return eos_token(eosio::asset(amount, EOS_SYMBOL));
     }
 
     static eosio::extended_symbol ram_symbol() {
         return eosio::extended_symbol(RAM_SYMBOL, RAM_TOKEN_CONTRACT);
     }
 
-    static eosio::extended_asset ram_asset(eosio::asset asset) 
+    static eosio::extended_asset ram_token(eosio::asset asset) 
     {
         eosio_assert(asset.symbol == RAM_SYMBOL, "Invalid RAM asset!");
         return eosio::extended_asset(asset, RAM_TOKEN_CONTRACT);
     }
 
+    static eosio::extended_asset ram_token(int64_t amount) {
+        return ram_token(eosio::asset(amount, RAM_SYMBOL));
+    }
+
     static eosio::extended_asset to_token(eosio::asset asset) 
     {
         if(asset.symbol == EOS_SYMBOL) {
-            return eos_asset(asset);
+            return eos_token(asset);
         } else {
-            return ram_asset(asset);
+            return ram_token(asset);
         }
     }
 
     static auto operator"" _EOS (unsigned long long value) {
-        return eos_asset(eosio::asset(static_cast<int64_t>(value), EOS_SYMBOL));
+        return eos_token(static_cast<int64_t>(value));
     }
 
     static auto operator"" _RAM (unsigned long long value) {
-        return ram_asset(eosio::asset(static_cast<int64_t>(value), RAM_SYMBOL));
+        return ram_token(static_cast<int64_t>(value));
     }
 }

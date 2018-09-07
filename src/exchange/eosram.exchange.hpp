@@ -23,7 +23,7 @@ namespace eosram {
 
     //public_api:
         // @abi action
-        void test(account_name payer, uint64_t limit, std::string memo);
+        void test();
         
         //buy RAM token
         //if ttl is -1 buy order will not expier  (if you want to get your tokens back, just call withdraw)
@@ -40,16 +40,16 @@ namespace eosram {
         //@abi action
         void cancelbytxid(transaction_id_type txid);
 
-        // @abi action
-        void sweep();
-
     //private_api:
         // @abi action
         void init(account_name fee_recipient);
 
         // @abi action
         void setfeerecip(account_name account);
-        
+
+        // @abi action
+        void setproxy(account_name proxy);
+
         // @abi action
         void start();
 
@@ -83,6 +83,7 @@ namespace eosram {
         template<typename Lambda>
         void deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
         void make_transfer(account_name recipient, const asset& amount, std::string memo);
+        void transfer_token(const account_name from, const account_name to, const extended_asset& amount, std::string memo = "");
 
         void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
         void issue_ram_token(asset amount);
@@ -102,6 +103,7 @@ namespace eosram {
         bool is_running() const;
         void require_running() const;
         account_name fee_recipient() const;
+        account_name transfer_proxy() const;
 
     private:
         ds::buy_order_book bbook_;
