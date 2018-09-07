@@ -56,6 +56,13 @@ namespace eosram::ds {
             return detail::order_queue_t::find<detail::index_order_id>(id);
         }
 
+        auto get(order_id_t id) const
+        {
+            auto it = find(id);
+            eosio_assert(it != end(), "Order doesn't exist");
+            return std::move((*it));
+        }
+
         bool contains(order_id_t id) const
         {
             return detail::order_queue_t::contains<detail::index_order_id>(id);

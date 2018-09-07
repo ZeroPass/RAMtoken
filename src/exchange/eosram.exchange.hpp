@@ -11,7 +11,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <optional>
 #include <string>
 
 namespace eosram {
@@ -71,11 +70,9 @@ namespace eosram {
         void execute_memo_cmd(const ds::memo_cmd_cancel_order& cmd, account_name account, asset value);
         void start_ttl_timer(order_id_t order_id, ttl_t ttl, account_name actor, std::string reason);
 
-        ds::order_book get_order_book_of(order_id_t order_id, const char* error_msg = "Order doesn't exists") const;
+        ds::order_book& get_order_book_of(order_id_t order_id, const char* error_msg = "Order doesn't exists");
+        ds::order_book* get_order_book_ptr_of(order_id_t id);
         bool order_exists(order_id_t id) const;
-
-        std::optional<ds::order_book>
-            get_opt_order_book_of(order_id_t id) const;
 
         void make_buy_order(account_name buyer, asset value, ttl_t ttl, bool force_buy);
         void make_sell_order(account_name seller, asset value, ttl_t ttl, bool force_sell);
@@ -105,5 +102,9 @@ namespace eosram {
         bool is_running() const;
         void require_running() const;
         account_name fee_recipient() const;
+
+    private:
+        ds::buy_order_book bbook_;
+        ds::sell_order_book sbook_;
     };
 } // eosram

@@ -8,7 +8,6 @@
 
 #include "ds/exchange_state.hpp"
 #include "ds/memo/memo.hpp"
-#include "ds/order_book.hpp"
 
 
 using namespace eosio;
@@ -125,7 +124,9 @@ void exchange::test(account_name payer, uint64_t limit, std::string memo)
 
 
 exchange::exchange(account_name self) : 
-    contract(self)
+    contract(self),
+    bbook_(self),
+    sbook_(self)
 {}
 
 void exchange::init(account_name fee_recipient)
@@ -187,10 +188,10 @@ void exchange::cancel(order_id_t order_id)
 {
     LOG_DEBUG("Canceling order: %", order_id);
     require_running();
-    auto order_book = get_order_book_of(order_id);
 
     // Verify caller is the owner of order
-    auto order = *order_book.find(order_id);
+    auto& order_book = get_order_book_of(order_id);
+    auto order = order_book.get(order_id);
     require_auth(order.trader);
 
     // Cancel order and return funds
@@ -215,8 +216,8 @@ void exchange::cancelbytxid(transaction_id_type txid)
 
 void exchange::execute_order(order_id_t order_id)
 {
-    auto buy_book = get_order_book_of(order_id);
-    auto buy_order = std::move(*buy_book.find(order_id));
+    auto& buy_book = get_order_book_of(order_id);
+    auto buy_order = buy_book.get(order_id);
     if(has_order_expired(buy_order)) 
     {
         stop_ttl_timer(buy_order.id);
@@ -224,11 +225,11 @@ void exchange::execute_order(order_id_t order_id)
         return;
     }
 
-    auto sell_book = [&]() -> order_book {
+    auto& sell_book = [&]() -> order_book& {
         if(buy_book.get_scope() == buy_order_book::get_scope()) {
-            return sell_order_book(_self);
+            return sbook_;
         }
-        return buy_order_book(_self);
+        return bbook_;
     }();
 
     auto sell_order_it = sell_book.top();
@@ -395,7 +396,7 @@ void exchange::make_order_and_execute(ds::order_book& book, account_name trader,
     book.emplace_order(order_id, trader, value, order_expire_time, exec_on_expire);
 
     DEBUG_ASSERT(order_exists(order_id), "make_sell_order: failed to insert order into order book!");
-    LOG_DEBUG("New order was inserted into order book order_id=%", order_id);
+    LOG_DEBUG("New order was inserted into order book. order_id=%", order_id);
 
     // Start order expiration timer and execute order
     start_ttl_timer(order_id, ttl, trader, "Order has expired"s);
@@ -575,8 +576,8 @@ void exchange::on_payment_received(account_name from, asset quantity, std::strin
 
 void exchange::on_order_expired(order_id_t order_id, std::string reason)
 {
-    auto order_book = get_order_book_of(order_id, "on_order_expired: Order does not exists!");
-    auto order = *order_book.find(order_id);
+    auto& order_book = get_order_book_of(order_id, "on_order_expired: Order does not exists!");
+    auto order = order_book.get(order_id);
 
     require_auth(order.trader);
     handle_expired_order(order_book, std::move(order), std::move(reason));
@@ -585,44 +586,42 @@ void exchange::on_order_expired(order_id_t order_id, std::string reason)
 void exchange::on_error(onerror error)
 {
     timer_id tid(error.sender_id);
-    auto book = get_opt_order_book_of(tid.order_id());
-    if(book.has_value())
+    auto book_ptr = get_order_book_ptr_of(tid.order_id());
+    if(book_ptr != nullptr)
     {
         LOG_DEBUG("Resending failed tx for order_id: %", tid.order_id());
 
-        auto order = *book->find(tid.order_id());
+        auto order = *book_ptr->find(tid.order_id());
         transaction tx = error.unpack_sent_trx();
         tx.delay_sec = onerror_resend_delay;
         tx.send(error.sender_id, order.trader);
     }
 }
 
-order_book exchange::get_order_book_of(order_id_t order_id, const char* error_msg) const
+order_book& exchange::get_order_book_of(order_id_t order_id, const char* error_msg)
 {
-    auto opt_book = get_opt_order_book_of(order_id);
-    eosio_assert(opt_book.has_value(), error_msg);
-    return std::move(opt_book).value();
+    auto* opt_book = get_order_book_ptr_of(order_id);
+    eosio_assert(opt_book != nullptr, error_msg);
+    return *opt_book;
 }
 
-std::optional<order_book>
-    exchange::get_opt_order_book_of(order_id_t id) const
+order_book* exchange::get_order_book_ptr_of(order_id_t id)
 {
-    buy_order_book bbook(_self); 
-    if(bbook.contains(id)) {
-        return bbook;
+    if(bbook_.contains(id)) {
+        return &bbook_;
     }
 
-    sell_order_book sbook(_self);
-    if(sbook.contains(id)) {
-        return sbook;
+    if(sbook_.contains(id)) {
+        return &sbook_;
     }
 
-    return std::nullopt;
+    return nullptr;
 }
 
 bool exchange::order_exists(order_id_t id) const
 {
-    return get_opt_order_book_of(id).has_value();
+    auto book_ptr = const_cast<exchange*>(this)-> get_order_book_ptr_of(id);
+    return book_ptr != nullptr;
 }
 
 void exchange::require_owner() const
@@ -673,7 +672,7 @@ void exchange::clrorders(symbol_type sym, std::string reason)
     require_admin();
     std::size_t limit = 8;
 
-    order_book book = sym == EOS_SYMBOL ? order_book(buy_order_book(_self)) : order_book(sell_order_book(_self));
+    order_book& book = sym == EOS_SYMBOL ? static_cast<order_book&>(bbook_) : static_cast<order_book&>(sbook_);
     auto it = book.begin();
 
     while(it != book.end() && limit --> 0)
