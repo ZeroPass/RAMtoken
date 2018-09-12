@@ -33,7 +33,8 @@ static bool stop_ttl_timer(order_id_t order_id) {
 
 void exchange::test()
 {
-    //  order_t order { 1234, asset(0'1000), payer, now(), true};
+    //transfer_token(_self, N(eosramturtle), 32926_RAM, "");
+
 
 }
 
@@ -151,6 +152,14 @@ void exchange::cancelbytxid(transaction_id_type txid)
     cancel(get_order_id(txid));
 }
 
+void exchange::deferred_order_execution(order_id_t order_id, uint32_t delay, account_name actor)
+{
+    order_timer t(timer_id(order_id, N(execute_order)));
+    t.set_permission(actor, N(active));
+    t.set_callback(_self, N(execute_order), order_id);
+    t.start(delay, actor);
+}
+
 void exchange::execute_order(order_id_t order_id)
 {
     auto& buy_book = get_order_book_of(order_id);
@@ -196,13 +205,8 @@ void exchange::execute_order(order_id_t order_id)
         stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
     }
     // Execute another order loop?
-    else if(sell_order_it != sell_book.end())
-    {
-        constexpr uint32_t delay_exec = order_execution_delay;
-        order_timer t(timer_id(buy_order.id, N(execute_order)));
-        t.set_permission(buy_order.trader, N(active));
-        t.set_callback(_self, N(execute_order), buy_order.id);
-        t.start(delay_exec, buy_order.trader);
+    else if(sell_order_it != sell_book.end()) {
+        deferred_order_execution(buy_order.id, order_execution_delay, buy_order.trader);
     }
 }
 
@@ -345,7 +349,7 @@ void exchange::make_order_and_execute(ds::order_book& book, account_name trader,
 
     // Start order expiration timer and execute order
     start_ttl_timer(order_id, ttl, trader, "Order has expired"s);
-    execute_order(order_id);
+    deferred_order_execution(order_id, 0, trader);
 }
 
 // Cancel order

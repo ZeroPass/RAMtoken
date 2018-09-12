@@ -77,6 +77,7 @@ namespace eosram {
         void make_buy_order(account_name buyer, asset value, ttl_t ttl, bool force_buy);
         void make_sell_order(account_name seller, asset value, ttl_t ttl, bool force_sell);
         void make_order_and_execute(ds::order_book&, account_name trader, asset value, ttl_t ttl, bool exec_on_expire);
+        void deferred_order_execution(order_id_t order_id, uint32_t delay, account_name actor);
         void execute_order(order_id_t order_id);
         void execute_trade(ds::order_t& o1, ds::order_t& o2);
 
