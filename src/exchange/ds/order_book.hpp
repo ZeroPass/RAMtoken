@@ -10,8 +10,7 @@
 namespace eosram::ds {
     using namespace eosio;
 
-    //@abi table orderbook
-    struct order_t : index_queue_element
+    struct [[eosio::table("orderbook")]] order_t : index_queue_element
     {
         order_id_t id;
         asset value;

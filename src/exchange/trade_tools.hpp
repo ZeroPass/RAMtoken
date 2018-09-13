@@ -2,9 +2,9 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/core_symbol.hpp>
 
+#include "constants.hpp"
 #include "fees.hpp"
 #include "ds/ram_market.hpp"
-#include "../constants.hpp"
 
 #ifndef ABIGEN
 #include "../token/eosram.token.hpp"
@@ -38,7 +38,7 @@ namespace eosram {
     {
     #ifndef ABIGEN
         token t(tkn_sym.contract);
-        return t.has_balance(account, tkn_sym);
+        return t.has_balance(account, tkn_sym.symbol);
     #else
         return false;
     #endif

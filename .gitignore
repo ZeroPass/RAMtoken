@@ -1,3 +1,9 @@
+# Ignore folders
+build
+
+# Ignore source files
+constants.hpp
+
 # Compiled Object files
 src/**/*.abi
 src/**/*.wasm

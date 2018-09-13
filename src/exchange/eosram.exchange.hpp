@@ -4,7 +4,7 @@
 #include <eosiolib/transaction.hpp>
 #include <eosiolib/types.hpp>
 
-#include "../constants.hpp"
+#include "constants.hpp"
 #include "ds/ram_market.hpp"
 #include "ds/order_book.hpp"
 #include "ds/memo/memo.hpp"
@@ -22,44 +22,44 @@ namespace eosram {
         exchange(account_name self);
 
     //public_api:
-        // @abi action
+        [[eosio::action]]
         void test();
         
         //buy RAM token
         //if ttl is -1 buy order will not expier  (if you want to get your tokens back, just call withdraw)
-        //@abi action
+        [[eosio::action]]
         void buy(account_name buyer, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_buy = true);
 
         //sell RAM token
-        //@abi action
+        [[eosio::action]]
         void sell(account_name seller, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
 
-         //@abi action
+        [[eosio::action]]
         void cancel(order_id_t order_id);
 
-        //@abi action
+        [[eosio::action]]
         void cancelbytxid(transaction_id_type txid);
 
     //private_api:
-        // @abi action
+        [[eosio::action]]
         void init(account_name fee_recipient);
 
-        // @abi action
+        [[eosio::action]]
         void setfeerecip(account_name account);
 
-        // @abi action
+        [[eosio::action]]
         void setproxy(account_name proxy);
 
-        // @abi action
+        [[eosio::action]]
         void start();
 
-        // @abi action
+        [[eosio::action]]
         void stop();
 
-        // @abi action
+        [[eosio::action]]
         void clrallorders(std::string reason);
 
-        // @abi action
+        [[eosio::action]]
         void clrorders(symbol_type sym, std::string reason);
 
         // signal handler

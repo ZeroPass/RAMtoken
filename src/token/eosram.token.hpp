@@ -14,18 +14,20 @@ namespace eosram {
     using eosio::symbol_name;
     using eosio::symbol_type;
 
+    static constexpr auto RAM_SYMBOL = S(0, RAM);
+
     class token : public contract 
     {
     public:
-        token(account_name self) : contract(self){}
-
-        static symbol_type symbol();
+        token(account_name self) :
+            contract(self)
+        {}
 
     //public_api:
-        // @abi action
+        [[eosio::action]]
         void signup(account_name account);
 
-        // @abi action
+        [[eosio::action]]
         void transfer(account_name from, account_name to, asset quantity, string memo);
 
         inline asset get_supply(symbol_type sym) const;
@@ -33,25 +35,23 @@ namespace eosram {
         inline bool has_balance(account_name owner, symbol_type sym) const;
 
     //private_api:
-        // @abi action
+        [[eosio::action]]
         void create(account_name issuer);
 
-        // @abi action
+        [[eosio::action]]
         void issue(account_name to, asset quantity, string memo);
 
-        // @abi action
+        [[eosio::action]]
         void burn(asset quantity, string memo);
 
     private:
-        // @abi table accounts i64
-        struct account
+        struct [[eosio::table]] account
         {
             asset    balance;
             uint64_t primary_key() const { return balance.symbol.name(); }
         };
 
-        // @abi table stat i64
-        struct currency_stat
+        struct [[eosio::table]] currency_stat
         {
             asset          supply;
             asset          max_supply;

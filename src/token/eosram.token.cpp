@@ -1,18 +1,10 @@
 #include "eosram.token.hpp"
-#include "../constants.hpp"
 #include <utility>
 
 using namespace eosram;
 using namespace eosio;
 
 constexpr int64_t init_max_supply = 100000000000000;
-
-
-symbol_type token::symbol()
-{
-    static auto sym = RAM_SYMBOL;
-    return sym;
-}
 
 void token::create(account_name issuer)
 {
@@ -98,7 +90,7 @@ void token::burn(asset quantity, string memo)
 
 void token::signup(account_name account)
 {
-    auto null_value = asset(0, symbol());
+    auto null_value = asset(0, RAM_SYMBOL);
 
     auto sym_name = null_value.symbol.name();
     stats statstable( _self, sym_name );

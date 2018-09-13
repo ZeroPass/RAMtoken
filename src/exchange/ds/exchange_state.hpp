@@ -8,8 +8,7 @@
 namespace eosram::ds {
     using namespace eosio;
 
-    //@abi table state
-    struct state_t
+    struct [[eosio::table("state")]] state_t
     {
         account_name fee_account = 0;
         account_name transfer_proxy = 0;

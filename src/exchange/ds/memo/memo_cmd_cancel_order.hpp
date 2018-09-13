@@ -1,6 +1,7 @@
 #pragma once
-#include "../../../constants.hpp"
-#include "../../../utils.hpp"
+#include "../../constants.hpp"
+#include "../../utils.hpp"
+
 #include <eosiolib/types.h>
 #include <string>
 #include <string_view>

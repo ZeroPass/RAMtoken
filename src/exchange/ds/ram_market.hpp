@@ -1,7 +1,7 @@
 #pragma once
 #include <eosiolib/eosio.hpp>
-#include <eosio.system/eosio.system.hpp>
-#include "ram_exchange_state.cpp"
+#include <tuple>
+#include "ram_exchange_state.hpp"
 
 namespace eosram::ds {
     using eosio::asset;
@@ -67,15 +67,15 @@ namespace eosram::ds {
 
         static void buyram(account_name buyer, account_name receiver, asset eos_quantity)
         {
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, buyram)(
-                N(eosio), {{buyer, N(active)}}, {buyer, receiver, eos_quantity}
+            eosio::dispatch_inline(N(eosio), N(buyram), {{buyer, N(active)}}, 
+                std::make_tuple(buyer, receiver, eos_quantity)
             );
         }
 
         static void buyrambytes(account_name buyer, account_name receiver, uint32_t bytes)
         {
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, buyrambytes)(
-                N(eosio), {{buyer, N(active)}}, {buyer, receiver, bytes}
+            eosio::dispatch_inline(N(eosio), N(buyrambytes), {{buyer, N(active)}}, 
+                std::make_tuple(buyer, receiver, bytes)
             );
         }
 
@@ -86,8 +86,8 @@ namespace eosram::ds {
 
         static void sellrambytes(account_name seller, uint32_t bytes)
         {
-            INLINE_ACTION_SENDER(eosiosystem::system_contract, sellram)(
-                N(eosio), {{seller, N(active)}}, {seller, bytes}
+            eosio::dispatch_inline(N(eosio), N(sellram), {{seller, N(active)}}, 
+                std::make_tuple(seller, bytes)
             );
         }
 

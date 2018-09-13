@@ -4,7 +4,7 @@
 #include "order_timer.hpp"
 #include "order_utils.hpp"
 #include "trade_tools.hpp"
-#include "../utils.hpp"
+#include "utils.hpp"
 
 #include "ds/exchange_state.hpp"
 #include "ds/memo/memo.hpp"
@@ -269,8 +269,8 @@ void exchange::make_transfer(account_name recipient, const asset& amount, std::s
     auto ext_amount = to_token(amount);
     if(!is_account_owner_of(recipient, ext_amount.get_extended_symbol()))
     {
-        auto da = deduct_fee(ext_amount, token_transfer_fee);
-        ext_amount.amount = da.value.amount;
+        auto da = deduct_fee(ext_amount.quantity, token_transfer_fee);
+        ext_amount.quantity.amount = da.value.amount;
         
         if(da.fee.amount > 0) {
             transfer_token(_self, fee_recipient(), to_token(da.fee), "Token transfer fee");
@@ -284,7 +284,7 @@ void exchange::make_transfer(account_name recipient, const asset& amount, std::s
 
 void exchange::transfer_token(const account_name from, const account_name to, const extended_asset& amount, std::string memo)
 {
-    eosio_assert(amount.is_valid(), "Cannot transfer invalid amount!" );
+    eosio_assert(amount.quantity.is_valid(), "Cannot transfer invalid amount!" );
     account_name proxy = [&] {
         if(to != _self) {
             return transfer_proxy();

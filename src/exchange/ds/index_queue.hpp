@@ -11,7 +11,7 @@
 namespace eosram::ds {
     using eosio::multi_index;
 
-    struct index_queue_element 
+    struct [[eosio::table]] index_queue_element 
     {
         uint64_t seq;
         index_queue_element() : seq(0ULL) {}

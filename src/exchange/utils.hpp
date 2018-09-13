@@ -69,7 +69,7 @@ namespace eosram {
             if(proxy) {
                 return pack(std::make_tuple(from, to, std::move(amount), std::move(memo)));
             }
-            return pack(std::make_tuple(from, to, static_cast<asset&&>(std::move(amount)), std::move(memo)));
+            return pack(std::make_tuple(from, to, std::move(amount.quantity), std::move(memo)));
         }();
 
         ta.send();

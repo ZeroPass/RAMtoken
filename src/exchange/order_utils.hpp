@@ -3,9 +3,9 @@
 #include <eosiolib/system.h>
 #include <eosiolib/types.h>
 
+#include "constants.hpp"
+#include "types.hpp"
 #include "ds/order_book.hpp"
-#include "../constants.hpp"
-#include "../types.hpp"
 
 namespace eosram {
 
