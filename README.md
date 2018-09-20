@@ -33,19 +33,19 @@ Transfer proxy: `proxytransax`
 
 
 #### CryptoKylin testnet:
-Exchange: `eramexchange`
-Exchange fee: `ramxchangfee`
-Transfer proxy: `proxytransax`
+Exchange: `eramexchange`  
+Exchange fee: `ramxchangfee`  
+Transfer proxy: `proxytransax`  
 
 
 ## Permissions  
 
 Exchange account  
-*â€¢ owner, admin, active* 
+*• owner, admin, active* 
   
 Token account  
-*â€¢ active*  
+*• active*  
   
 Fee account  
-*â€¢ active*  
+*• active*  
 
