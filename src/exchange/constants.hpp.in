@@ -8,16 +8,19 @@
 #include "../token/eosram.token.hpp"
 #include "types.hpp"
 
-#ifdef ABIGEN
-    static constexpr auto RAM_SYMBOL = 0;
-#endif
-static constexpr auto EOS_SYMBOL = CORE_SYMBOL;
-static constexpr auto EOS_TOKEN_CONTRACT = "eosio.token"_n;
-static constexpr auto EOSIO_RAM_CONTRACT = "eosio.ram"_n;
-static constexpr auto RAM_TOKEN_CONTRACT = "@RAM_TOKEN_CONTRACT@"_n;
-
 
 namespace eosram {
+    #ifdef ABIGEN
+        static constexpr auto RAM_SYMBOL = 0;
+    #endif
+    static constexpr auto EOS_SYMBOL = CORE_SYMBOL;
+    static constexpr auto EOS_TOKEN_CONTRACT = "eosio.token"_n;
+    static constexpr auto EOSIO_RAM_CONTRACT = "eosio.ram"_n;
+    static constexpr auto RAM_TOKEN_CONTRACT = "ram.token"_n;
+
+    static constexpr auto k_active = "active"_n;
+    static constexpr auto k_eosio  = "eosio"_n;
+
     static constexpr int32_t  min_ttl                = 1;       // 1sec
     static constexpr ttl_t    infinite_ttl           = -1;
     static constexpr int64_t  transfer_fee_in_ram    = 250;
