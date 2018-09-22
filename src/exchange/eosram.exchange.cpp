@@ -15,27 +15,27 @@ using namespace eosram;
 using namespace eosram::ds;
 using namespace std::string_literals;
 
+constexpr auto k_admin  = "admin"_n;
+constexpr auto k_execute_order  = "execute_order"_n;
+constexpr auto k_order_expired  = "order_expired"_n;
 
 void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, account_name actor, std::string reason)
 {
     if(!ttl_infinite(ttl))
     {
         order_timer t(order_id);
-        t.set_permission(actor, N(active));
-        t.set_callback(_self, N(order_expired), order_id, std::move(reason));
+        t.set_permission(actor, k_active);
+        t.set_callback(_self, k_order_expired, order_id, std::move(reason));
         t.start(ttl, actor);
     }
 }
 
 static bool stop_ttl_timer(order_id_t order_id) {
-    return stop_order_timer(timer_id(order_id, N(order_expired)));
+    return stop_order_timer(timer_id(order_id, k_order_expired));
 }
 
 void exchange::test()
 {
-    //transfer_token(_self, N(eosramturtle), 32926_RAM, "");
-
-
 }
 
 
@@ -154,9 +154,9 @@ void exchange::cancelbytxid(transaction_id_type txid)
 
 void exchange::deferred_order_execution(order_id_t order_id, uint32_t delay, account_name actor)
 {
-    order_timer t(timer_id(order_id, N(execute_order)));
-    t.set_permission(actor, N(active));
-    t.set_callback(_self, N(execute_order), order_id);
+    order_timer t(order_id);
+    t.set_permission(actor, k_active);
+    t.set_callback(_self, k_execute_order, order_id);
     t.start(delay, actor);
 }
 
@@ -292,7 +292,7 @@ void exchange::transfer_token(const account_name from, const account_name to, co
         return 0ULL;
     }();
     
-    inline_transfer(proxy, {from, N(active)},
+    inline_transfer(proxy, {from, k_active},
         from, to, amount, std::move(memo)
     );
 }
@@ -367,7 +367,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
 {
     eosio_assert(has_order_expired(order), "handle_expired_order: Order has not expired!");
     LOG_DEBUG("Order expired id= %", order.id);
-
+    
     book.erase(order);
 
     // Buy/Sell RAM token on system ram market
@@ -384,7 +384,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             /* Calculate output RAM - market fee */
             auto out_ram_in_eos   = deduct_fee(order.value, ram_market_fee).value;
             auto out_ram_quantity = rm.convert_to_ram(out_ram_in_eos);
-            
+
             // Buy RAM from ram market and transfer token;
             rm.buyram(_self, _self, order.value);
 
@@ -433,16 +433,18 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
 
 void exchange::issue_ram_token(asset amount)
 {
+    constexpr auto k_issue  = "issue"_n;
     std::string memo = "Issuing RAM token: " + to_string(amount);
-    dispatch_inline(RAM_TOKEN_CONTRACT, N(issue),
-        {{ _self, N(active) }}, std::make_tuple(_self, amount, std::move(memo)));
+    dispatch_inline(RAM_TOKEN_CONTRACT, k_issue,
+        {{ _self, k_active }}, std::make_tuple(_self, amount, std::move(memo)));
 }
 
 void exchange::burn_ram_token(asset amount)
 {
+    constexpr auto k_burn   = "burn"_n;
     std::string memo = "Burning RAM token: " + to_string(amount);
-    dispatch_inline(RAM_TOKEN_CONTRACT, N(burn),
-        {{ _self, N(active) }}, std::make_tuple(amount, std::move(memo)));
+    dispatch_inline(RAM_TOKEN_CONTRACT, k_burn,
+        {{ _self, k_active }}, std::make_tuple(amount, std::move(memo)));
 }
 
 void exchange::on_notification(uint64_t sender, uint64_t action)
@@ -457,14 +459,14 @@ void exchange::on_notification(uint64_t sender, uint64_t action)
                 execute_action(this, &exchange::on_transfer);
             } return;
         }
-        case N(execute_order):
+        case k_execute_order:
         {
             if(sender == _self) {
                 execute_action(this, &exchange::execute_order);
             }
             return;
         }
-        case N(order_expired):
+        case k_order_expired:
         {
             if(sender == _self) {
                 execute_action(this, &exchange::on_order_expired);
@@ -575,12 +577,13 @@ bool exchange::order_exists(order_id_t id) const
 
 void exchange::require_owner() const
 {
-    require_auth2(_self, N(owner));
+    constexpr auto k_owner  = "owner"_n;
+    require_auth2(_self, k_owner);
 }
 
 void exchange::require_admin() const
 {
-    require_auth2(_self, N(admin));
+    require_auth2(_self, k_admin);
 }
 
 void exchange::start()
@@ -632,9 +635,10 @@ void exchange::clrorders(symbol_type sym, std::string reason)
 
     if(!book.empty()) 
     {
-        order_timer t(timer_id(sym.value, N(clrorders)));
-        t.set_permission(_self, N(admin));
-        t.set_callback(_self, N(clrorders), sym, std::move(reason));
+        order_timer t(sym.value);
+        t.set_permission(_self, k_admin);
+        constexpr auto clrorders = "clrorders"_n;
+        t.set_callback(_self, clrorders, sym, std::move(reason));
         t.start(5, _self);
     }
 }

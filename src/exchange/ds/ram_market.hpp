@@ -2,6 +2,7 @@
 #include <eosiolib/eosio.hpp>
 #include <tuple>
 #include "ram_exchange_state.hpp"
+#include "../constants.hpp"
 
 namespace eosram::ds {
     using eosio::asset;
@@ -32,12 +33,13 @@ namespace eosram::ds {
     {
     public:
         ram_market() :
-            m_(N(eosio), N(eosio))
+            m_(k_eosio, k_eosio)
         {}
 
         const eosiosystem::exchange_state& get_state() const
         {
-            auto it = m_.find(S(4, RAMCORE));;
+            constexpr auto rc_sym = S(4, RAMCORE);
+            auto it = m_.find(rc_sym);
             eosio_assert(it != m_.end(), "ram_market: Could not find eosiosystem rammarket!");
             return *it;
         }
@@ -62,19 +64,21 @@ namespace eosram::ds {
         asset convert_to_ram(asset from_eos) const
         {
             auto tmp = get_state();
-            return tmp.convert(from_eos, S(0, RAM));
+            return tmp.convert(from_eos, RAM_SYMBOL);
         }
 
         static void buyram(account_name buyer, account_name receiver, asset eos_quantity)
         {
-            eosio::dispatch_inline(N(eosio), N(buyram), {{buyer, N(active)}}, 
+            constexpr auto k_buyram = "buyram"_n;
+            eosio::dispatch_inline(k_eosio, k_buyram, {{ buyer, k_active }}, 
                 std::make_tuple(buyer, receiver, eos_quantity)
             );
         }
 
         static void buyrambytes(account_name buyer, account_name receiver, uint32_t bytes)
         {
-            eosio::dispatch_inline(N(eosio), N(buyrambytes), {{buyer, N(active)}}, 
+            constexpr auto k_buyrambytes = "buyrambytes"_n;
+            eosio::dispatch_inline(k_eosio, k_buyrambytes, {{buyer, k_active }}, 
                 std::make_tuple(buyer, receiver, bytes)
             );
         }
@@ -86,8 +90,8 @@ namespace eosram::ds {
 
         static void sellrambytes(account_name seller, uint32_t bytes)
         {
-            eosio::dispatch_inline(N(eosio), N(sellram), {{seller, N(active)}}, 
-                std::make_tuple(seller, bytes)
+            constexpr auto k_sellram = "sellram"_n;
+            eosio::dispatch_inline(k_eosio, k_sellram, {{ seller, k_active }}, 
                 std::make_tuple(seller, static_cast<int64_t>(bytes))
             );
         }

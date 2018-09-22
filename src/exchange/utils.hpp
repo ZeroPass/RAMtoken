@@ -63,8 +63,8 @@ namespace eosram {
     {
         eosio::action ta;
         ta.account = proxy ? proxy : amount.contract;
-        ta.name = N(transfer);
-        ta.authorization.emplace_back(from, N(active));
+        ta.name = "transfer"_n;
+        ta.authorization.emplace_back(from, k_active);
         ta.data = [&]{
             if(proxy) {
                 return pack(std::make_tuple(from, to, std::move(amount), std::move(memo)));
