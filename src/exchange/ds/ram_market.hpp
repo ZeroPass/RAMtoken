@@ -88,6 +88,7 @@ namespace eosram::ds {
         {
             eosio::dispatch_inline(N(eosio), N(sellram), {{seller, N(active)}}, 
                 std::make_tuple(seller, bytes)
+                std::make_tuple(seller, static_cast<int64_t>(bytes))
             );
         }
 
