@@ -54,7 +54,7 @@ namespace eosram {
 
     static void asset_assert(const asset& asset, const symbol_type& sym1, const symbol_type& sym2,  const char* msg)
     {
-        eosio_assert(asset.symbol.is_valid() , "Invalid symbol name" );
+        eosio_assert(asset.symbol.is_valid() , "Invalid symbol name");
         eosio_assert(asset.symbol == sym1  || asset.symbol == sym2 , msg);
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }

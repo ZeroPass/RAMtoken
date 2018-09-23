@@ -74,12 +74,12 @@ namespace eosram {
         ds::order_book* get_order_book_ptr_of(order_id_t id);
         bool order_exists(order_id_t id) const;
 
-        void make_buy_order(account_name buyer, asset value, ttl_t ttl, bool force_buy);
-        void make_sell_order(account_name seller, asset value, ttl_t ttl, bool force_sell);
-        void make_order_and_execute(ds::order_book&, account_name trader, asset value, ttl_t ttl, bool exec_on_expire);
-        void deferred_order_execution(order_id_t order_id, uint32_t delay, account_name actor);
         void execute_order(order_id_t order_id);
         void execute_trade(ds::order_t& o1, ds::order_t& o2);
+        void insert_and_execute_order(order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool force_execution);
+        void make_buy_order(order_id_t order_id, account_name buyer, asset value, ttl_t ttl, bool force_buy);
+        void make_sell_order(order_id_t order_id, account_name seller, asset value, ttl_t ttl, bool force_sell);
+        void make_order_and_execute(ds::order_book&, order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool convert_on_expire);
 
         template<typename Lambda>
         void deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
@@ -91,10 +91,10 @@ namespace eosram {
         void burn_ram_token(asset amount);
 
         // signals
-        void on_transfer(account_name from, account_name to, asset quantity, std::string memo);
-        void on_payment_received(account_name from, asset quantity, std::string memo);
-        void on_order_expired(order_id_t order_id, std::string reason);
         void on_error(onerror error);
+        void on_order_expired(order_id_t order_id, std::string reason);
+        void on_payment_received(account_name from, asset quantity, std::string memo);
+        void on_transfer(account_name from, account_name to, asset quantity, std::string memo);
 
         // authorization 
         void require_owner() const;

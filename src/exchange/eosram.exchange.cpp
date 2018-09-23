@@ -15,8 +15,10 @@ using namespace eosram;
 using namespace eosram::ds;
 using namespace std::string_literals;
 
-constexpr auto k_admin  = "admin"_n;
+constexpr auto k_admin          = "admin"_n;
+constexpr auto k_clrorders      = "clrorders"_n;
 constexpr auto k_execute_order  = "execute_order"_n;
+constexpr auto k_insorderexec   = "insorderexec"_n;
 constexpr auto k_order_expired  = "order_expired"_n;
 
 void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, account_name actor, std::string reason)
@@ -35,9 +37,7 @@ static bool stop_ttl_timer(order_id_t order_id) {
 }
 
 void exchange::test()
-{
-}
-
+{}
 
 
 exchange::exchange(account_name self) : 
@@ -70,9 +70,7 @@ void exchange::setfeerecip(account_name account)
 void exchange::setproxy(account_name proxy)
 {
     require_auth(_self);
-    if(proxy > 0) {
-        eosio_assert(is_account(proxy), "Proxy is not valid account");
-    }
+    eosio_assert(proxy == 0 || is_account(proxy), "Proxy is not valid account");
 
     exchange_state state(_self);
     auto s = state.get();
@@ -152,14 +150,6 @@ void exchange::cancelbytxid(transaction_id_type txid)
     cancel(get_order_id(txid));
 }
 
-void exchange::deferred_order_execution(order_id_t order_id, uint32_t delay, account_name actor)
-{
-    order_timer t(order_id);
-    t.set_permission(actor, k_active);
-    t.set_callback(_self, k_execute_order, order_id);
-    t.start(delay, actor);
-}
-
 void exchange::execute_order(order_id_t order_id)
 {
     auto& buy_book = get_order_book_of(order_id);
@@ -205,8 +195,12 @@ void exchange::execute_order(order_id_t order_id)
         stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
     }
     // Execute another order loop?
-    else if(sell_order_it != sell_book.end()) {
-        deferred_order_execution(buy_order.id, order_execution_delay, buy_order.trader);
+    else if(sell_order_it != sell_book.end()) 
+    {
+        order_timer t(buy_order.id);
+        t.set_permission(buy_order.trader, k_active);
+        t.set_callback(_self, k_execute_order, buy_order.id);
+        t.start(order_execution_delay, buy_order.trader);
     }
 }
 
@@ -297,7 +291,7 @@ void exchange::transfer_token(const account_name from, const account_name to, co
     );
 }
 
-// Make order
+// Order entry point
 void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, account_name account, asset value)
 {
     require_running();
@@ -305,42 +299,53 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, account_name acc
     asset_assert(value, EOS_SYMBOL, RAM_SYMBOL, "The value must be in EOS or RAM!");
     require_min_trade_amount(value, "Trade value does not satisfy min trade amount!");
 
+    // Generate order id from current txid
+    order_id_t order_id = get_order_id(get_txid());
+
+    // Insert and execute order
+    dispatch_inline(_self, k_insorderexec, { {_self, k_active }, { account, k_active } },
+        std::make_tuple(order_id, account, value, cmd.ttl(), cmd.convert_on_expire())
+    );
+}
+
+void exchange::insert_and_execute_order(order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool convert_on_expire)
+{
+    require_auth(_self);
+    DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader account!");
+
     switch(value.symbol)
     {
         case EOS_SYMBOL:
         {
-            make_buy_order(account, value, cmd.ttl(), cmd.convert_on_expire());
+            make_buy_order(order_id, trader, value, ttl, convert_on_expire);
             return;
         }
         case RAM_SYMBOL:
         {
-            make_sell_order(account, value, cmd.ttl(), cmd.convert_on_expire());
+            make_sell_order(order_id, trader, value, ttl, convert_on_expire);
             return;
         }
     }
 }
 
-void exchange::make_buy_order(account_name buyer, asset value, ttl_t ttl, bool force_buy)
+void exchange::make_buy_order(order_id_t order_id, account_name buyer, asset value, ttl_t ttl, bool force_buy)
 {
     DEBUG_ASSERT(value.symbol == EOS_SYMBOL, "make_buy_order: value must be in EOS!");
 
     buy_order_book bbook(_self);
-    make_order_and_execute(bbook, buyer, value, ttl, force_buy);
+    make_order_and_execute(bbook, order_id, buyer, value, ttl, force_buy);
 }
 
-void exchange::make_sell_order(account_name seller, asset value, ttl_t ttl, bool force_sell)
+void exchange::make_sell_order(order_id_t order_id, account_name seller, asset value, ttl_t ttl, bool force_sell)
 {
     DEBUG_ASSERT(value.symbol == RAM_SYMBOL, "make_sell_order: value must be in RAM!");
 
     sell_order_book sbook(_self);
-    make_order_and_execute(sbook, seller, value, ttl, force_sell);
+    make_order_and_execute(sbook, order_id, seller, value, ttl, force_sell);
 }
 
-void exchange::make_order_and_execute(ds::order_book& book, account_name trader, asset value, ttl_t ttl, bool exec_on_expire)
+void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool exec_on_expire)
 {
-    // Generate order id from current txid
-    order_id_t order_id = get_order_id(get_txid());
-
     auto order_expire_time = get_order_expiration_time(ttl);
     book.emplace_order(order_id, trader, value, order_expire_time, exec_on_expire);
 
@@ -349,7 +354,7 @@ void exchange::make_order_and_execute(ds::order_book& book, account_name trader,
 
     // Start order expiration timer and execute order
     start_ttl_timer(order_id, ttl, trader, "Order has expired"s);
-    deferred_order_execution(order_id, 0, trader);
+    execute_order(order_id);
 }
 
 // Cancel order
@@ -466,6 +471,12 @@ void exchange::on_notification(uint64_t sender, uint64_t action)
             }
             return;
         }
+        case k_insorderexec:
+        {
+            eosio_assert(sender == _self, "insorderexec action's are only valid from the contract's account");
+            execute_action(this, &exchange::insert_and_execute_order);
+            return;
+        }
         case k_order_expired:
         {
             if(sender == _self) {
@@ -538,14 +549,14 @@ void exchange::on_error(onerror error)
 {
     timer_id tid(error.sender_id);
     auto book_ptr = get_order_book_ptr_of(tid.order_id());
-    if(book_ptr != nullptr)
+    if(book_ptr != nullptr || tid.action_name() == k_clrorders)
     {
         LOG_DEBUG("Resending failed tx for order_id: %", tid.order_id());
 
         auto order = *book_ptr->find(tid.order_id());
         transaction tx = error.unpack_sent_trx();
         tx.delay_sec = onerror_resend_delay;
-        tx.send(error.sender_id, order.trader);
+        tx.send(error.sender_id, order.trader, true);
     }
 }
 
@@ -637,8 +648,7 @@ void exchange::clrorders(symbol_type sym, std::string reason)
     {
         order_timer t(sym.value);
         t.set_permission(_self, k_admin);
-        constexpr auto clrorders = "clrorders"_n;
-        t.set_callback(_self, clrorders, sym, std::move(reason));
+        t.set_callback(_self, k_clrorders, sym, std::move(reason));
         t.start(5, _self);
     }
 }
@@ -654,4 +664,5 @@ void exchange::require_running() const
     eosio_assert(is_running(), "RAM token exchange is stopped!");
 }
 
-EOSIO_ABI( eosram::exchange, (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders)(test) )
+EOSIO_ABI( eosram::exchange, 
+    (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders)(test) )
