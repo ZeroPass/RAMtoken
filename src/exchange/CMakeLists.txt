@@ -21,9 +21,6 @@ set(CMAKE_CXX_STANDARD 17)  # require C++17 std
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-get_filename_component(DIR_ONE_ABOVE ../ ABSOLUTE)
-message(STATUS ${DIR_ONE_ABOVE})
-
 # if no wasm root is given use default path
 if(EOSIO_CDT_ROOT STREQUAL "" OR NOT EOSIO_CDT_ROOT)
    set(EOSIO_CDT_ROOT "/usr/local/eosio.cdt")
