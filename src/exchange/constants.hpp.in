@@ -16,7 +16,7 @@ namespace eosram {
     static constexpr auto EOS_SYMBOL = CORE_SYMBOL;
     static constexpr auto EOS_TOKEN_CONTRACT = "eosio.token"_n;
     static constexpr auto EOSIO_RAM_CONTRACT = "eosio.ram"_n;
-    static constexpr auto RAM_TOKEN_CONTRACT = "ram.token"_n;
+    static constexpr auto RAM_TOKEN_CONTRACT = "@RAM_TOKEN_CONTRACT@"_n;
 
     static constexpr auto k_active = "active"_n;
     static constexpr auto k_eosio  = "eosio"_n;
