@@ -103,7 +103,8 @@ void token::open(account_name owner, symbol_type symbol, account_name ram_payer)
 
 void token::transfer(account_name from, account_name to, asset quantity, string memo)
 {
-    transfer_token(from, to, /*ram_payer=*/from, quantity, std::move(memo));
+    auto ram_payer = has_auth(to) ? to : from;
+    transfer_token(from, to, ram_payer, quantity, std::move(memo));
 }
 
 void token::transfer_token(account_name from, account_name to, account_name ram_payer, asset quantity, string memo)
