@@ -57,7 +57,7 @@ void token::issue(account_name to, asset quantity, string memo)
     add_balance( st.issuer, quantity, st.issuer );
 
     if(to != st.issuer) {
-        SEND_INLINE_ACTION(*this, transfer, {st.issuer,N(active)}, {st.issuer, to, quantity, memo});
+        SEND_INLINE_ACTION(*this, transfer, {st.issuer, "active"_n}, {st.issuer, to, quantity, memo});
     }
 }
 
@@ -88,23 +88,17 @@ void token::burn(asset quantity, string memo)
     });
 }
 
-void token::signup(account_name account)
+void token::open(account_name owner, symbol_type symbol, account_name ram_payer)
 {
-    auto null_value = asset(0, RAM_SYMBOL);
-
-    auto sym_name = null_value.symbol.name();
-    stats statstable( _self, sym_name );
-    auto existing = statstable.find(sym_name);
-    eosio_assert(existing != statstable.end(), "RAM token does not exist yet!");
-
-    require_auth(account);
-    require_recipient(account);
-
-    accounts owner_acnts(_self, account);
-    auto currency = owner_acnts.find(sym_name);
-    eosio_assert(currency == owner_acnts.end(), "Account has already balance!");
-
-    add_balance(account, null_value, /*payer=*/account);
+    require_auth(ram_payer);
+    accounts acnts( _self, owner );
+    auto it = acnts.find(symbol.name());
+    if(it == acnts.end()) 
+    {
+        acnts.emplace( ram_payer, [&]( auto& a ){
+            a.balance = asset{ 0, symbol };
+        });
+    }
 }
 
 void token::transfer(account_name from, account_name to, asset quantity, string memo)
@@ -141,7 +135,6 @@ void token::sub_balance(account_name owner, asset value)
     const auto& from = from_acnts.get(value.symbol.name(), "no balance object found");
     eosio_assert(from.balance.amount >= value.amount, "overdrawn balance");
 
-
     if(from.balance.amount == value.amount) {
         from_acnts.erase(from);
     } 
@@ -169,4 +162,4 @@ void token::add_balance(account_name owner, asset value, account_name ram_payer)
     }
 }
 
-EOSIO_ABI( eosram::token, (create)(issue)(burn)(transfer)(signup) );
+EOSIO_ABI( eosram::token, (create)(issue)(burn)(transfer)(open) );

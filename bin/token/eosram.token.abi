@@ -25,11 +25,17 @@
         }
       ]
     },{
-      "name": "signup",
+      "name": "open",
       "base": "",
       "fields": [{
-          "name": "account",
-          "type": "name"
+          "name":"owner",
+          "type":"name"
+        },{
+          "name":"symbol",
+          "type":"symbol"
+        },{
+          "name":"ram_payer",
+          "type":"name"
         }
       ]
     },{
@@ -85,8 +91,8 @@
     }
   ],
   "actions": [{
-      "name": "signup",
-      "type": "signup",
+      "name": "open",
+      "type": "open",
       "ricardian_contract": ""
     },{
       "name": "transfer",

@@ -25,7 +25,7 @@ namespace eosram {
 
     //public_api:
         [[eosio::action]]
-        void signup(account_name account);
+        void open(account_name owner, symbol_type symbol, account_name ram_payer);
 
         [[eosio::action]]
         void transfer(account_name from, account_name to, asset quantity, string memo);
