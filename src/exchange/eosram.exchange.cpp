@@ -280,13 +280,13 @@ void exchange::transfer_token(const account_name from, const account_name to, co
 {
     eosio_assert(amount.quantity.is_valid(), "Cannot transfer invalid amount!" );
     account_name proxy = [&] {
-        if(to != _self) {
+        if(to != _self && to != fee_recipient()) {
             return transfer_proxy();
         }
         return 0ULL;
     }();
     
-    inline_transfer(proxy, {from, k_active},
+    inline_transfer(proxy, { from, k_active },
         from, to, amount, std::move(memo)
     );
 }
