@@ -28,12 +28,14 @@ Or
 
 #### Mainet
 Exchange: `ramtokendapp`  
+Token: `ramtokenmoon`  
 Exchange fee: `ramtokenfees`  
 Transfer proxy: `proxytransax`  
 
 
 #### CryptoKylin testnet:
 Exchange: `eramexchange`  
+Token: `ramramramtkn`  
 Exchange fee: `ramxchangfee`  
 Transfer proxy: `proxytransax`  
 
@@ -41,11 +43,11 @@ Transfer proxy: `proxytransax`
 ## Permissions  
 
 Exchange account  
-*• owner, admin, active* 
+*ï¿½ owner, admin, active* 
   
 Token account  
-*• active*  
+*ï¿½ active*  
   
 Fee account  
-*• active*  
+*ï¿½ active*  
 
