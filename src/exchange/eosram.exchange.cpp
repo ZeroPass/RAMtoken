@@ -420,7 +420,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             burn_ram_token(order.value);
             
             // Transfer converted funds to trader
-            deduct_fee_and_transfer(order.trader, out_eos_quantity, issue_token_fee,
+            deduct_fee_and_transfer(order.trader, out_eos_quantity, burn_token_fee,
                 gen_trade_memo(order.value, out_eos_quantity, price),
                 "Burn RAM token fee"
             );
