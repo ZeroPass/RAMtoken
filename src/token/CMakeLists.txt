@@ -3,6 +3,10 @@ project(eosram.token VERSION 1.0.0)
 
 option(GEN_ABI "Generate ABI" OFF)
 
+set(CMAKE_CXX_STANDARD 17)  # require C++17 std
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 # if no wasm root is given use default path
 if(EOSIO_CDT_ROOT STREQUAL "" OR NOT EOSIO_CDT_ROOT)
    set(EOSIO_CDT_ROOT "/usr/local/eosio.cdt")
