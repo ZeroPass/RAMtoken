@@ -1,4 +1,7 @@
 #include "eosram.token.hpp"
+#ifndef ABIGEN
+#include "../exchange/ds/exchange_state.hpp"
+#endif
 #include <utility>
 
 using namespace eosram;
@@ -116,6 +119,16 @@ void token::transfer_token(account_name from, account_name to, account_name ram_
     auto sym = quantity.symbol.name();
     stats statstable(_self, sym);
     const auto& st = statstable.get(sym);
+
+    if(from != st.issuer || from != _self) 
+    {
+    #ifndef ABIGEN
+        ds::exchange_state es(st.issuer);
+        eosio_assert(es.get().exchange_running, "transfers are frozen");
+    #else
+        eosio_assert(false, "transfers are frozen");
+    #endif
+    }
 
     require_recipient(from);
     require_recipient(to);
