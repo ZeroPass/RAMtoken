@@ -148,6 +148,7 @@ void exchange::cancelbytxid(transaction_id_type txid)
 
 void exchange::execute_order(order_id_t order_id)
 {
+    require_auth(_self);
     auto& buy_book = get_order_book_of(order_id);
     auto buy_order = buy_book.get(order_id);
     if(has_order_expired(buy_order)) 
@@ -194,7 +195,7 @@ void exchange::execute_order(order_id_t order_id)
     else if(sell_order_it != sell_book.end()) 
     {
         order_timer t(buy_order.id);
-        t.set_permission(buy_order.trader, k_active);
+        t.set_permissions({{ _self, k_active }, { buy_order.trader, k_active }});
         t.set_callback(_self, k_execute_order, buy_order.id);
         t.start(order_execution_delay, buy_order.trader);
     }
@@ -299,7 +300,7 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, account_name acc
     order_id_t order_id = get_order_id(get_txid());
 
     // Insert and execute order
-    dispatch_inline(_self, k_insorderexec, { {_self, k_active }, { account, k_active } },
+    dispatch_inline(_self, k_insorderexec, {{ _self, k_active }, { account, k_active }},
         std::make_tuple(order_id, account, value, cmd.ttl(), cmd.convert_on_expire())
     );
 }
@@ -342,6 +343,7 @@ void exchange::make_sell_order(order_id_t order_id, account_name seller, asset v
 
 void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool exec_on_expire)
 {
+    DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!")
     auto order_expire_time = get_order_expiration_time(ttl);
     book.emplace_order(order_id, trader, value, order_expire_time, exec_on_expire);
 
@@ -360,7 +362,6 @@ void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, account_name a
     if(value.amount > 0) {
         make_transfer(account, value, "Returning excesed amount");
     }
-
     cancelbytxid(cmd.txid());
 }
 
