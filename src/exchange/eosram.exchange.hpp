@@ -22,21 +22,25 @@ namespace eosram {
         exchange(account_name self);
 
     //public_api:
-        [[eosio::action]]
-        void test();
-        
-        //buy RAM token
-        //if ttl is -1 buy order will not expier  (if you want to get your tokens back, just call withdraw)
+       /**
+        * Buys RAM token from the exchange.
+        * If ttl is -1 order will never expire.
+        */
         [[eosio::action]]
         void buy(account_name buyer, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_buy = true);
 
-        //sell RAM token
+       /**
+        * Sells RAM token on the exchange.
+        * If ttl is -1 order will never expire.
+        */
         [[eosio::action]]
         void sell(account_name seller, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
 
+        /** Cancels order by order id */
         [[eosio::action]]
         void cancel(order_id_t order_id);
 
+        /** Cancels order by order's transaction id */
         [[eosio::action]]
         void cancelbytxid(transaction_id_type txid);
 

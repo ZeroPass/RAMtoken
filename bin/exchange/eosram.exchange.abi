@@ -41,10 +41,6 @@
         }
       ]
     },{
-      "name": "test",
-      "base": "",
-      "fields": []
-    },{
       "name": "buy",
       "base": "",
       "fields": [{
@@ -170,10 +166,6 @@
     }
   ],
   "actions": [{
-      "name": "test",
-      "type": "test",
-      "ricardian_contract": ""
-    },{
       "name": "buy",
       "type": "buy",
       "ricardian_contract": ""

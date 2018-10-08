@@ -36,10 +36,6 @@ static bool stop_ttl_timer(order_id_t order_id) {
     return stop_order_timer(timer_id(order_id, k_order_expired));
 }
 
-void exchange::test()
-{}
-
-
 exchange::exchange(account_name self) : 
     contract(self),
     bbook_(self),
@@ -665,4 +661,4 @@ void exchange::require_running() const
 }
 
 EOSIO_ABI( eosram::exchange, 
-    (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders)(test) )
+    (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders) )
