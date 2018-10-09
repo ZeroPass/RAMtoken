@@ -32,7 +32,7 @@ struct rammarket_test : public eosio::contract
     }
 
     // @abi action
-    void buyram(account_name buyer, uint32_t bytes)
+    void buyram(eosio::name buyer, uint32_t bytes)
     {
         require_auth(buyer);
         auto in_eos = m_rm.convert_to_eos(asset(bytes, S(0, RAM)));
@@ -40,14 +40,14 @@ struct rammarket_test : public eosio::contract
     }
 
     // @abi action
-    void buyramfor(account_name buyer, account_name recipient, uint32_t bytes)
+    void buyramfor(eosio::name buyer, eosio::name recipient, uint32_t bytes)
     {
         require_auth(buyer);
         m_rm.buyrambytes(buyer, recipient, bytes);
     }
 
     // @abi action
-    void sellram(account_name seller, uint32_t bytes)
+    void sellram(eosio::name seller, uint32_t bytes)
     {
         require_auth(seller);
         m_rm.sellrambytes(seller, bytes);

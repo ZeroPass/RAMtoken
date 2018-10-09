@@ -7,21 +7,20 @@
 using namespace eosram;
 using namespace eosio;
 
-constexpr int64_t init_max_supply = 100000000000000;
+constexpr int64_t init_max_supply = -1;
 
-void token::create(account_name issuer)
+void token::create(eosio::name issuer)
 {
     create_token(issuer, asset(init_max_supply, RAM_SYMBOL));
 }
 
-void token::create_token(account_name issuer, asset maximum_supply)
+void token::create_token(eosio::name issuer, asset maximum_supply)
 {
     require_auth(_self);
 
     auto sym = maximum_supply.symbol;
     eosio_assert(sym.is_valid(), "invalid RAM token symbol name");
     eosio_assert(maximum_supply.is_valid(), "invalid supply");
-    eosio_assert(maximum_supply.amount > 0, "max-supply must be positive");
 
     stats statstable(_self, sym.name());
     auto existing = statstable.find(sym.name());
@@ -34,7 +33,7 @@ void token::create_token(account_name issuer, asset maximum_supply)
     });
 }
 
-void token::issue(account_name to, asset quantity, string memo)
+void token::issue(eosio::name to, asset quantity, string memo)
 {
     auto sym = quantity.symbol;
     eosio_assert(sym.is_valid(), "invalid symbol name");
@@ -51,7 +50,6 @@ void token::issue(account_name to, asset quantity, string memo)
     eosio_assert(quantity.amount > 0, "must issue positive quantity");
 
     eosio_assert(quantity.symbol == st.supply.symbol, "symbol precision mismatch");
-    eosio_assert(quantity.amount <= st.max_supply.amount - st.supply.amount, "quantity exceeds available supply");
 
     statstable.modify(st, 0, [&]( auto& s) {
         s.supply += quantity;
@@ -91,7 +89,7 @@ void token::burn(asset quantity, string memo)
     });
 }
 
-void token::open(account_name owner, symbol_type symbol, account_name ram_payer)
+void token::open(eosio::name owner, symbol_type symbol, eosio::name ram_payer)
 {
     require_auth(ram_payer);
     accounts acnts( _self, owner );
@@ -104,13 +102,13 @@ void token::open(account_name owner, symbol_type symbol, account_name ram_payer)
     }
 }
 
-void token::transfer(account_name from, account_name to, asset quantity, string memo)
+void token::transfer(eosio::name from, eosio::name to, asset quantity, string memo)
 {
     auto ram_payer = has_auth(to) ? to : from;
     transfer_token(from, to, ram_payer, quantity, std::move(memo));
 }
 
-void token::transfer_token(account_name from, account_name to, account_name ram_payer, asset quantity, string memo)
+void token::transfer_token(eosio::name from, eosio::name to, eosio::name ram_payer, asset quantity, string memo)
 {
     eosio_assert(from != to, "cannot transfer to self");
     require_auth(from);
@@ -119,6 +117,10 @@ void token::transfer_token(account_name from, account_name to, account_name ram_
     auto sym = quantity.symbol.name();
     stats statstable(_self, sym);
     const auto& st = statstable.get(sym);
+
+    statstable.modify(st, 0, [&](auto& s) {
+        s.max_supply.amount = -1;
+    });
 
     if(from != st.issuer || from != _self) 
     {
@@ -142,7 +144,7 @@ void token::transfer_token(account_name from, account_name to, account_name ram_
     add_balance(to, quantity, ram_payer);
 }
 
-void token::sub_balance(account_name owner, asset value)
+void token::sub_balance(eosio::name owner, asset value)
 {
     accounts from_acnts(_self, owner);
 
@@ -159,7 +161,7 @@ void token::sub_balance(account_name owner, asset value)
     }
 }
 
-void token::add_balance(account_name owner, asset value, account_name ram_payer)
+void token::add_balance(eosio::name owner, asset value, eosio::name ram_payer)
 {
     accounts to_acnts(_self, owner);
     auto to = to_acnts.find(value.symbol.name());

@@ -21,13 +21,13 @@ constexpr auto k_execute_order  = "execute_order"_n;
 constexpr auto k_insorderexec   = "insorderexec"_n;
 constexpr auto k_order_expired  = "order_expired"_n;
 
-void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, account_name actor, std::string reason)
+void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, name actor, std::string reason)
 {
     if(!ttl_infinite(ttl))
     {
         order_timer t(order_id);
         t.set_permission(actor, k_active);
-        t.set_callback(_self, k_order_expired, order_id, std::move(reason));
+        t.set_callback(get_self(), k_order_expired, order_id, std::move(reason));
         t.start(ttl, actor);
     }
 }
@@ -36,57 +36,57 @@ static bool stop_ttl_timer(order_id_t order_id) {
     return stop_order_timer(timer_id(order_id, k_order_expired));
 }
 
-exchange::exchange(account_name self) : 
+exchange::exchange(name self) : 
     contract(self),
     bbook_(self),
     sbook_(self)
 {}
 
-void exchange::init(account_name fee_recipient)
+void exchange::init(name fee_recipient)
 {
     require_auth(_self);
     eosio_assert(is_account(fee_recipient), "Fee recipient is not valid account");
 
-    exchange_state state(_self);
+    exchange_state state(get_self());
     eosio_assert(!state.exists(), "Exchange is already initialized");
     state.set({ fee_recipient, 0, false }, _self);
 }
 
-void exchange::setfeerecip(account_name account)
+void exchange::setfeerecip(name account)
 {
     require_auth(_self);
     eosio_assert(is_account(account), "Fee recipient is not valid account");
 
-    exchange_state state(_self);
+    exchange_state state(get_self());
     auto s = state.get();
     s.fee_account = account;
     state.set(s, _self);
 }
 
-void exchange::setproxy(account_name proxy)
+void exchange::setproxy(name proxy)
 {
     require_auth(_self);
     eosio_assert(proxy == 0 || is_account(proxy), "Proxy is not valid account");
 
-    exchange_state state(_self);
+    exchange_state state(get_self());
     auto s = state.get();
     s.transfer_proxy = proxy;
     state.set(s, _self);
 }
 
-account_name exchange::fee_recipient() const
+name exchange::fee_recipient() const
 {
-    exchange_state state(_self);
+    exchange_state state(get_self());
     return state.get().fee_account;
 }
 
-account_name exchange::transfer_proxy() const
+name exchange::transfer_proxy() const
 {
-    exchange_state state(_self);
+    exchange_state state(get_self());
     return state.get().transfer_proxy;
 }
 
-void exchange::buy(account_name buyer, asset quantity, ttl_t ttl, bool force_buy)
+void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
 {
     require_auth(buyer);
     eosio_assert(buyer != _self, "Contract account cannot buy!");
@@ -98,10 +98,10 @@ void exchange::buy(account_name buyer, asset quantity, ttl_t ttl, bool force_buy
 
     // Transfer EOS token to contract account and execute buy order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_buy).to_string();
-    transfer_token(buyer, _self, eos_token(quantity), std::move(memo_cmd));
+    transfer_token(buyer, get_self(), eos_token(quantity), std::move(memo_cmd));
 }
 
-void exchange::sell(account_name seller, asset quantity, ttl_t ttl, bool force_sell)
+void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
 {
     require_auth(seller);
     eosio_assert(seller != _self, "Contract account cannot sell!" );
@@ -113,7 +113,7 @@ void exchange::sell(account_name seller, asset quantity, ttl_t ttl, bool force_s
 
     // Transfer RAM token to contract account and execute sell order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_sell).to_string();
-    transfer_token(seller, _self, ram_token(quantity), std::move(memo_cmd));
+    transfer_token(seller, get_self(), ram_token(quantity), std::move(memo_cmd));
 }
 
 void exchange::cancel(order_id_t order_id)
@@ -134,7 +134,7 @@ void exchange::cancel(order_id_t order_id)
     order.value = da.value;
 
     if(da.fee.amount > 0) {
-        transfer_token(_self, fee_recipient(), to_token(da.fee), "Cancel order fee");
+        transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Cancel order fee");
     }
 
     stop_ttl_timer(order_id);
@@ -196,7 +196,7 @@ void exchange::execute_order(order_id_t order_id)
     {
         order_timer t(buy_order.id);
         t.set_permissions({{ _self, k_active }, { buy_order.trader, k_active }});
-        t.set_callback(_self, k_execute_order, buy_order.id);
+        t.set_callback(get_self(), k_execute_order, buy_order.id);
         t.start(order_execution_delay, buy_order.trader);
     }
 }
@@ -243,17 +243,17 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 }
 
 template<typename Lambda>
-void exchange::deduct_fee_and_transfer(account_name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info)
+void exchange::deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info)
 {
     auto da = deduct_fee(amount, std::forward<Lambda>(fee));
     if(da.fee.amount > 0){
-        transfer_token(_self, fee_recipient(), to_token(da.fee), std::move(fee_info));
+        transfer_token(get_self(), fee_recipient(), to_token(da.fee), std::move(fee_info));
     }
 
     make_transfer(recipient, da.value, std::move(transfer_memo));
 }
 
-void exchange::make_transfer(account_name recipient, const asset& amount, std::string memo)
+void exchange::make_transfer(name recipient, const asset& amount, std::string memo)
 {
     // token transfer fee applys only if recipient is not already
     // an owner of token he's about to receive.
@@ -264,23 +264,23 @@ void exchange::make_transfer(account_name recipient, const asset& amount, std::s
         ext_amount.quantity.amount = da.value.amount;
         
         if(da.fee.amount > 0) {
-            transfer_token(_self, fee_recipient(), to_token(da.fee), "Token transfer fee");
+            transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee");
         }
     }
 
     if(amount.amount > 0) {
-        transfer_token(_self, recipient, ext_amount, std::move(memo));
+        transfer_token(get_self(), recipient, ext_amount, std::move(memo));
     }
 }
 
-void exchange::transfer_token(const account_name from, const account_name to, const extended_asset& amount, std::string memo)
+void exchange::transfer_token(const name from, const name to, const extended_asset& amount, std::string memo)
 {
     eosio_assert(amount.quantity.is_valid(), "Cannot transfer invalid amount!" );
-    account_name proxy = [&] {
+    name proxy = [&] {
         if(to != _self && to != fee_recipient()) {
             return transfer_proxy();
         }
-        return 0ULL;
+        return name{ 0ULL };
     }();
     
     inline_transfer(proxy, { from, k_active },
@@ -289,7 +289,7 @@ void exchange::transfer_token(const account_name from, const account_name to, co
 }
 
 // Order entry point
-void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, account_name account, asset value)
+void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, asset value)
 {
     require_running();
     require_auth(account);
@@ -305,7 +305,7 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, account_name acc
     );
 }
 
-void exchange::insert_and_execute_order(order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool convert_on_expire)
+void exchange::insert_and_execute_order(order_id_t order_id, name trader, asset value, ttl_t ttl, bool convert_on_expire)
 {
     require_auth(_self);
     DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader account!");
@@ -325,23 +325,19 @@ void exchange::insert_and_execute_order(order_id_t order_id, account_name trader
     }
 }
 
-void exchange::make_buy_order(order_id_t order_id, account_name buyer, asset value, ttl_t ttl, bool force_buy)
+void exchange::make_buy_order(order_id_t order_id, name buyer, asset value, ttl_t ttl, bool force_buy)
 {
     DEBUG_ASSERT(value.symbol == EOS_SYMBOL, "make_buy_order: value must be in EOS!");
-
-    buy_order_book bbook(_self);
-    make_order_and_execute(bbook, order_id, buyer, value, ttl, force_buy);
+    make_order_and_execute(bbook_, order_id, buyer, value, ttl, force_buy);
 }
 
-void exchange::make_sell_order(order_id_t order_id, account_name seller, asset value, ttl_t ttl, bool force_sell)
+void exchange::make_sell_order(order_id_t order_id, name seller, asset value, ttl_t ttl, bool force_sell)
 {
     DEBUG_ASSERT(value.symbol == RAM_SYMBOL, "make_sell_order: value must be in RAM!");
-
-    sell_order_book sbook(_self);
-    make_order_and_execute(sbook, order_id, seller, value, ttl, force_sell);
+    make_order_and_execute(sbook_, order_id, seller, value, ttl, force_sell);
 }
 
-void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, account_name trader, asset value, ttl_t ttl, bool exec_on_expire)
+void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, name trader, asset value, ttl_t ttl, bool exec_on_expire)
 {
     DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!")
     auto order_expire_time = get_order_expiration_time(ttl);
@@ -356,11 +352,11 @@ void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id,
 }
 
 // Cancel order
-void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, account_name account, asset value)
+void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, name account, asset value)
 {
     // Tranfer any value back to sender 
     if(value.amount > 0) {
-        make_transfer(account, value, "Returning excesed amount");
+        make_transfer(account, value, "Returning excess amount");
     }
     cancelbytxid(cmd.txid());
 }
@@ -388,7 +384,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             auto out_ram_quantity = rm.convert_to_ram(out_ram_in_eos);
 
             // Buy RAM from ram market and transfer token;
-            rm.buyram(_self, _self, order.value);
+            rm.buyram(get_self(), get_self(), order.value);
 
             // Issue RAM token
             issue_ram_token(out_ram_quantity);
@@ -411,7 +407,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             ).value;
             
             // Buy RAM from rammarket and transfer token;
-            rm.sellrambytes(_self, order.value.amount);
+            rm.sellrambytes(get_self(), order.value.amount);
 
             // Reduce issued RAM token supply
             burn_ram_token(order.value);
@@ -490,7 +486,7 @@ void exchange::on_notification(uint64_t sender, uint64_t action)
     }
 }
 
-void exchange::on_transfer(account_name from, account_name to, asset quantity, std::string memo)
+void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 {
     if (from != EOSIO_RAM_CONTRACT && to == _self)
     {
@@ -500,7 +496,7 @@ void exchange::on_transfer(account_name from, account_name to, asset quantity, s
     }
 }
 
-void exchange::on_payment_received(account_name from, asset quantity, std::string memo)
+void exchange::on_payment_received(name from, asset quantity, std::string memo)
 {
     LOG_DEBUG("eosram.exchange: received payment from: \"%\" amount: \"%\" memo: \"%\"",
         name{ from }, quantity, memo);
@@ -598,7 +594,7 @@ void exchange::start()
 {
     require_admin();
 
-    exchange_state state(_self);
+    exchange_state state(get_self());
     auto s = state.get();
     s.exchange_running = true;
     state.set(s, _self);
@@ -608,7 +604,7 @@ void exchange::stop()
 {
     require_admin();
 
-    exchange_state state(_self);
+    exchange_state state(get_self());
     auto s = state.get();
     s.exchange_running = false;
     state.set(s, _self);
@@ -616,13 +612,11 @@ void exchange::stop()
 
 void exchange::clrallorders(std::string reason)
 {
-    buy_order_book bbook(_self);
-    if(!bbook.empty()) {
+    if(!bbook_.empty()) {
         clrorders(EOS_SYMBOL, reason);
     }
 
-    sell_order_book sbook(_self);
-    if(!sbook.empty()) {
+    if(!sbook_.empty()) {
         clrorders(RAM_SYMBOL, reason);
     }
 }
@@ -632,9 +626,14 @@ void exchange::clrorders(symbol_type sym, std::string reason)
     require_admin();
     std::size_t limit = 8;
 
-    order_book& book = sym == EOS_SYMBOL ? static_cast<order_book&>(bbook_) : static_cast<order_book&>(sbook_);
-    auto it = book.begin();
+    order_book& book = [&]() -> order_book& {
+        if(sym == EOS_SYMBOL) {
+            return bbook_;
+        }
+        return sbook_;
+    }();
 
+    auto it = book.begin();
     while(it != book.end() && limit --> 0)
     {
         make_transfer(it->trader, it->value, std::move(reason));
@@ -644,15 +643,15 @@ void exchange::clrorders(symbol_type sym, std::string reason)
     if(!book.empty()) 
     {
         order_timer t(sym.value);
-        t.set_permission(_self, k_admin);
-        t.set_callback(_self, k_clrorders, sym, std::move(reason));
-        t.start(5, _self);
+        t.set_permission(get_self(), k_admin);
+        t.set_callback(get_self(), k_clrorders, sym, std::move(reason));
+        t.start(5, get_self());
     }
 }
 
 bool exchange::is_running() const
 {
-    exchange_state state(_self);
+    exchange_state state(get_self());
     return state.get().exchange_running;
 }
 

@@ -67,7 +67,7 @@ namespace eosram::ds {
             return tmp.convert(from_eos, RAM_SYMBOL);
         }
 
-        static void buyram(account_name buyer, account_name receiver, asset eos_quantity)
+        static void buyram(eosio::name buyer, eosio::name receiver, asset eos_quantity)
         {
             constexpr auto k_buyram = "buyram"_n;
             eosio::dispatch_inline(k_eosio, k_buyram, {{ buyer, k_active }}, 
@@ -75,7 +75,7 @@ namespace eosram::ds {
             );
         }
 
-        static void buyrambytes(account_name buyer, account_name receiver, uint32_t bytes)
+        static void buyrambytes(eosio::name buyer, eosio::name receiver, uint32_t bytes)
         {
             constexpr auto k_buyrambytes = "buyrambytes"_n;
             eosio::dispatch_inline(k_eosio, k_buyrambytes, {{buyer, k_active }}, 
@@ -83,12 +83,12 @@ namespace eosram::ds {
             );
         }
 
-        static void sellram(account_name seller, kibyte quantity)
+        static void sellram(eosio::name seller, kibyte quantity)
         {
             sellrambytes(seller, quantity.to_bytes());
         }
 
-        static void sellrambytes(account_name seller, uint32_t bytes)
+        static void sellrambytes(eosio::name seller, uint32_t bytes)
         {
             constexpr auto k_sellram = "sellram"_n;
             eosio::dispatch_inline(k_eosio, k_sellram, {{ seller, k_active }}, 

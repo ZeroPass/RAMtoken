@@ -34,7 +34,7 @@ namespace eosram {
         return { amount, fee };
     }
 
-    static bool is_account_owner_of(account_name account, const eosio::extended_symbol& tkn_sym)
+    static bool is_account_owner_of(eosio::name account, const eosio::extended_symbol& tkn_sym)
     {
     #ifndef ABIGEN
         token t(tkn_sym.contract);

@@ -1,6 +1,7 @@
 #pragma once
 #include <eosiolib/transaction.h>
 #include <eosiolib/transaction.hpp>
+#include <eosiolib/types.hpp>
 #include <utility>
 
 #include "types.hpp"
@@ -9,8 +10,8 @@
 namespace eosram {
     struct timer_id 
     {
-        timer_id(order_id_t order_id, action_name action_name) {
-            value = (static_cast<uint128_t>(order_id) << 64) | action_name;
+        timer_id(order_id_t order_id, eosio::name action_name) {
+            value = (static_cast<uint128_t>(order_id) << 64) | action_name.value;
         }
 
         timer_id(uint128_t raw_id) : 
@@ -21,8 +22,8 @@ namespace eosram {
             return static_cast<uint64_t>(value >> 64);
         }
 
-        constexpr action_name action_name() const {
-            return static_cast<uint64_t>(value);
+        constexpr eosio::name action_name() const {
+            return eosio::name{ static_cast<uint64_t>(value) };
         }
 
         operator uint128_t() const {
@@ -41,11 +42,11 @@ namespace eosram {
         }
 
         timer_id id() const {
-            return timer_id(o_id_, tx_.actions.at(0).name);
+            return timer_id(o_id_, eosio::name{ tx_.actions.at(0).name });
         }
 
         template<typename... Args>
-        void set_callback(account_name contract, action_name action, Args&&... args) 
+        void set_callback(eosio::name contract, eosio::name action, Args&&... args) 
         {
             auto& act = tx_.actions.at(0);
             act.account = contract;
@@ -53,14 +54,14 @@ namespace eosram {
             act.data = eosio::pack(std::make_tuple(std::forward<Args>(args)...));
         }
 
-        void set_callback(account_name contract, action_name action) 
+        void set_callback(eosio::name contract, eosio::name action) 
         {
             auto& act = tx_.actions.at(0);
             act.account = contract;
             act.name = action;
         }
 
-        void set_permission(account_name account, permission_name permission)
+        void set_permission(eosio::name account, permission_name permission)
         {
             set_permissions({ eosio::permission_level{account, permission} });
         }
@@ -70,7 +71,7 @@ namespace eosram {
             tx_.actions.at(0).authorization = std::move(perms);
         }
 
-        void start(unsigned_int time_out, account_name payer, bool replace = false)
+        void start(unsigned_int time_out, eosio::name payer, bool replace = false)
         {
             tx_.delay_sec = time_out;
             tx_.send(id(), payer, replace);

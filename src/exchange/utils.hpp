@@ -20,13 +20,13 @@
 extern "C" {  \
     void apply( uint64_t receiver, uint64_t sender, uint64_t action ) { \
         auto self = receiver; \
-        if( action == N(onerror)) { \
+        if(action == "onerror"_n.value) { \
             /* onerror is only valid if it is for the "eosio" sender account and authorized by "eosio"'s "active permission */ \
-            eosio_assert(sender == N(eosio), "onerror action's are only valid from the \"eosio\" system account"); \
+            eosio_assert(sender == "eosio"_n.value, "onerror action's are only valid from the \"eosio\" system account"); \
         } \
-        TYPE thiscontract( self ); \
+        TYPE thiscontract( eosio::name{ self } ); \
         bool action_dispatched = false; \
-        if(sender == self || action == N(onerror)) { \
+        if(sender == self || action == "onerror"_n.value) { \
             action_dispatched = true; \
             switch( action ) { \
                 EOSIO_API( TYPE, MEMBERS ) \
@@ -59,7 +59,7 @@ namespace eosram {
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }
 
-    static void inline_transfer(account_name proxy, eosio::permission_level perm, account_name from, account_name to, extended_asset amount, std::string memo)
+    static void inline_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
     {
         eosio::action ta;
         ta.account = proxy ? proxy : amount.contract;

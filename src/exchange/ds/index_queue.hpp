@@ -146,7 +146,7 @@ namespace eosram::ds {
         }
 
         template<typename ...Args>
-        void emplace(account_name payer, Args&& ... args) 
+        void emplace(eosio::name payer, Args&& ... args) 
         {
             push(ValueType{ std::forward<Args>(args)... }, payer);
         }
@@ -184,7 +184,7 @@ namespace eosram::ds {
             return qi_.get_scope();
         }
 
-        void modify(const_iterator it, ValueType value, account_name payer) 
+        void modify(const_iterator it, ValueType value, eosio::name payer) 
         {
             eosio_assert(it != end(), "Cannot modify index_queue element, invalid iterator!");
             qi_.modify(it, payer, [&](auto& qe) {
@@ -207,7 +207,7 @@ namespace eosram::ds {
             return v;
         }
 
-        void push(ValueType value, account_name payer)
+        void push(ValueType value, eosio::name payer)
         {
             uint64_t seq = 0;
             auto it = qi_.rbegin();

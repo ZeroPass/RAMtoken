@@ -3,6 +3,7 @@
 
 #include <eosiolib/asset.hpp>
 #include <eosiolib/multi_index.hpp>
+#include <eosiolib/types.hpp>
 
 namespace eosiosystem {
    using eosio::asset;
@@ -37,6 +38,6 @@ namespace eosiosystem {
       EOSLIB_SERIALIZE( exchange_state, (supply)(base)(quote) )
    };
 
-   typedef eosio::multi_index<N(rammarket), exchange_state> rammarket;
+   typedef eosio::multi_index<"rammarket"_n, exchange_state> rammarket;
 
 } /// namespace eosiosystem

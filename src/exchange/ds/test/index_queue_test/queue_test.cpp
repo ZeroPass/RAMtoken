@@ -34,8 +34,8 @@ class queue_test : public eosio::contract
 
 public:
     using contract::contract;
-    queue_test(account_name self) :
-        contract(self),
+    queue_test(eosio::name self) :
+        contract(self.value),
         m_q(self, self)
     {}
 
@@ -137,7 +137,7 @@ public:
     }
 
     /// @abi action
-    void clear(account_name payer)
+    void clear(eosio::name payer)
     {
         print("Removing all elements in queue...");
         auto it = m_q.begin();
@@ -147,7 +147,7 @@ public:
     }
 
     /// @abi action
-    void clearrange(account_name payer, uint64_t first_key, uint64_t num)
+    void clearrange(eosio::name payer, uint64_t first_key, uint64_t num)
     {
         auto it = eraser(first_key, num);
         if(it != m_q.end()) 
@@ -207,7 +207,7 @@ public:
     }
 
     /// @abi action
-    void runtests(account_name payer)
+    void runtests(eosio::name payer)
     { 
         require_auth(payer);
         eosio_assert(m_q.empty(), "Queue must be empty in order to run the tests!");
