@@ -148,7 +148,6 @@ void exchange::cancelbytxid(transaction_id_type txid)
 
 void exchange::execute_order(order_id_t order_id)
 {
-    require_auth(_self);
     auto& buy_book = get_order_book_of(order_id);
     auto buy_order = buy_book.get(order_id);
     if(has_order_expired(buy_order)) 
@@ -195,7 +194,7 @@ void exchange::execute_order(order_id_t order_id)
     else if(sell_order_it != sell_book.end()) 
     {
         order_timer t(buy_order.id);
-        t.set_permissions({{ _self, k_active }, { buy_order.trader, k_active }});
+        t.set_permission(buy_order.trader, k_active);
         t.set_callback(get_self(), k_execute_order, buy_order.id);
         t.start(order_execution_delay, buy_order.trader);
     }
