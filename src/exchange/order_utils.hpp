@@ -8,6 +8,9 @@
 #include "ds/order_book.hpp"
 
 namespace eosram {
+    namespace detail {
+        static constexpr uint32_t inf_time_ = 0UL;
+    }
 
     /* Returns order id from transaction id */
     static order_id_t get_order_id(const transaction_id_type& txid)
@@ -38,7 +41,7 @@ namespace eosram {
     static bool has_order_expired(const ds::order_t& order) 
     {   
         const auto exp_time = order.expiration_time;
-        return exp_time != 0 && now() >= exp_time;
+        return exp_time != detail::inf_time_ && now() >= exp_time;
     }
 
    /** 
@@ -51,7 +54,7 @@ namespace eosram {
     static uint32_t get_order_expiration_time(ttl_t ttl) 
     {   
         eosio_assert(ttl_valid(ttl), "Invlid ttl!");
-        return ttl_infinite(ttl) ? 0 : now() + ttl;
+        return ttl_infinite(ttl) ? detail::inf_time_ : now() + ttl;
     }
 
     static bool is_buy_order(const ds::order_t& order) {
@@ -72,7 +75,7 @@ namespace eosram {
     */
     static bool update_or_erase_order(ds::order_book& book, const ds::order_t& order)
     {
-        if(order.value.amount > 0) 
+        if(order.value.amount > 0LL) 
         {
             book.modify(order, order.trader);
             return false;
