@@ -54,6 +54,7 @@ void exchange::init(name fee_recipient)
 
 void exchange::setfeerecip(name account)
 {
+    require_admin();
     require_auth(_self);
     eosio_assert(is_account(account), "Fee recipient is not valid account");
 
