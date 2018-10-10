@@ -579,12 +579,6 @@ bool exchange::order_exists(order_id_t id) const
     return book_ptr != nullptr;
 }
 
-void exchange::require_owner() const
-{
-    constexpr auto k_owner  = "owner"_n;
-    require_auth2(_self, k_owner);
-}
-
 void exchange::require_admin() const
 {
     require_auth2(_self, k_admin);

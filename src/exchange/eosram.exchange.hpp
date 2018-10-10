@@ -94,14 +94,13 @@ namespace eosram {
         void issue_ram_token(asset amount);
         void burn_ram_token(asset amount);
 
-        // signals
+        // signal heandlers
         void on_error(onerror error);
         void on_order_expired(order_id_t order_id, std::string reason);
         void on_payment_received(eosio::name from, asset quantity, std::string memo);
         void on_transfer(eosio::name from, eosio::name to, asset quantity, std::string memo);
 
-        // authorization 
-        void require_owner() const;
+        // authorization
         void require_admin() const;
 
         // exchange state
