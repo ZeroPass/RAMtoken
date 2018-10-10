@@ -66,7 +66,7 @@ void exchange::setfeerecip(name account)
 
 void exchange::setproxy(name proxy)
 {
-    require_auth(_self);
+    require_admin();
     eosio_assert(proxy == 0 || is_account(proxy), "Proxy is not valid account");
 
     exchange_state state(get_self());
