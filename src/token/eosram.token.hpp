@@ -20,9 +20,7 @@ namespace eosram {
     class token : public contract 
     {
     public:
-        token(account_name self) :
-            contract(self)
-        {}
+        using contract::contract;
 
     //public_api:
         [[eosio::action]]
