@@ -7,11 +7,10 @@
 using namespace eosram;
 using namespace eosio;
 
-constexpr int64_t init_max_supply = -1;
-
 void token::create(eosio::name issuer)
 {
-    create_token(issuer, asset(init_max_supply, RAM_SYMBOL));
+    static constexpr int64_t inf_supply = -1;
+    create_token(issuer, asset(inf_supply, RAM_SYMBOL));
 }
 
 void token::create_token(eosio::name issuer, asset maximum_supply)
