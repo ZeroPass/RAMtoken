@@ -59,11 +59,10 @@ namespace eosram {
             uint64_t primary_key() const { return supply.symbol.name(); }
         };
 
-        typedef eosio::multi_index<N(accounts), account> accounts;
-        typedef eosio::multi_index<N(stat), currency_stat> stats;
+        typedef eosio::multi_index<"accounts"_n, account> accounts;
+        typedef eosio::multi_index<"stat"_n, currency_stat> stats;
 
         void create_token(eosio::name issuer, asset maximum_supply);
-        void signup_account(eosio::name owner, asset quantity);
         void transfer_token(eosio::name from, eosio::name to, eosio::name ram_payer, asset quantity, string memo);
 
         void sub_balance(eosio::name owner, asset value);
