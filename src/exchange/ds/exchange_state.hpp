@@ -4,8 +4,6 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/types.hpp>
 
-#include "index_queue.hpp"
-
 namespace eosram::ds {
     using namespace eosio;
 
