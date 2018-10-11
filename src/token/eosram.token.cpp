@@ -117,10 +117,6 @@ void token::transfer_token(eosio::name from, eosio::name to, eosio::name ram_pay
     stats statstable(_self, sym);
     const auto& st = statstable.get(sym);
 
-    statstable.modify(st, 0, [&](auto& s) {
-        s.max_supply.amount = -1;
-    });
-
     if(from != st.issuer || from != _self) 
     {
     #ifndef ABIGEN
