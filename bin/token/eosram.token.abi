@@ -39,6 +39,17 @@
         }
       ]
     },{
+      "name": "close",
+      "base": "",
+      "fields": [{
+          "name":"owner",
+          "type":"name"
+        },{
+          "name":"symbol",
+          "type":"symbol"
+        }
+      ]
+    },{
       "name": "transfer",
       "base": "",
       "fields": [{
@@ -93,6 +104,10 @@
   "actions": [{
       "name": "open",
       "type": "open",
+      "ricardian_contract": ""
+    },{
+      "name": "close",
+      "type": "close",
       "ricardian_contract": ""
     },{
       "name": "transfer",

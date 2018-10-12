@@ -105,6 +105,22 @@ void token::open(eosio::name owner, const symbol& symbol, name ram_payer)
     }
 }
 
+void token::close(name owner, const symbol& symbol)
+{
+    require_auth( owner );
+
+    auto sym_code_raw = symbol.code().raw();
+    stats statstable(_self, sym_code_raw);
+    const auto& st = statstable.get(sym_code_raw, "RAM symbol does not exist");
+    eosio_assert(st.supply.symbol == symbol, "RAM symbol precision mismatch");
+
+    accounts acnts(_self, owner.value);
+    auto it = acnts.find(sym_code_raw);
+    eosio_assert(it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect." );
+    eosio_assert(it->balance.amount == 0, "Cannot close because the balance is not zero." );
+    acnts.erase( it );
+}
+
 void token::transfer(name from, name to, asset quantity, std::string memo)
 {
     auto ram_payer = has_auth(to) ? to : from;
@@ -169,4 +185,4 @@ void token::add_balance(name owner, asset value, name ram_payer)
     }
 }
 
-EOSIO_DISPATCH(eosram::token, (create)(issue)(burn)(transfer)(open));
+EOSIO_DISPATCH(eosram::token, (create)(issue)(burn)(transfer)(open)(close));
