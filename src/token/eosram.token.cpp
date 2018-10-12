@@ -146,14 +146,9 @@ void token::sub_balance(name owner, asset value)
     const auto& from = from_acnts.get(value.symbol.code().raw(), "no balance object found");
     eosio_assert(from.balance.amount >= value.amount, "overdrawn balance");
 
-    if(from.balance.amount == value.amount) {
-        from_acnts.erase(from);
-    } 
-    else {
-        from_acnts.modify(from, owner, [&](auto& a) {
-            a.balance -= value;
-        });
-    }
+    from_acnts.modify(from, owner, [&](auto& a) {
+        a.balance -= value;
+    });
 }
 
 void token::add_balance(name owner, asset value, name ram_payer)
