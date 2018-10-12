@@ -93,11 +93,11 @@ void token::open(eosio::name owner, symbol_type symbol, eosio::name ram_payer)
     require_auth(ram_payer);
 
     auto symbol_name = symbol.name();
-    stats statstable( _self, symbol_name );
+    stats statstable(_self, symbol_name);
     const auto& st = statstable.get(symbol_name, "symbol does not exist");
     eosio_assert(st.supply.symbol == symbol, "RAM symbol precision mismatch");
     
-    accounts acnts( _self, owner );
+    accounts acnts(_self, owner);
     auto it = acnts.find(symbol_name);
     if(it == acnts.end()) 
     {
@@ -105,6 +105,22 @@ void token::open(eosio::name owner, symbol_type symbol, eosio::name ram_payer)
             a.balance = asset{ 0, symbol };
         });
     }
+}
+
+void token::close(eosio::name owner, symbol_type symbol)
+{
+   require_auth(owner);
+
+    auto symbol_name = symbol.name();
+    stats statstable(_self, symbol_name);
+    const auto& st = statstable.get(symbol_name, "symbol does not exist");
+    eosio_assert(st.supply.symbol == symbol, "RAM symbol precision mismatch");
+
+    accounts acnts(_self, owner);
+    auto it = acnts.find(symbol_name);
+    eosio_assert(it != acnts.end(), "Balance row already deleted or never existed. Action won't have any effect.");
+    eosio_assert(it->balance.amount == 0, "Cannot close because the balance is not zero.");
+    acnts.erase(it);
 }
 
 void token::transfer(eosio::name from, eosio::name to, asset quantity, string memo)
@@ -179,4 +195,4 @@ void token::add_balance(eosio::name owner, asset value, eosio::name ram_payer)
     }
 }
 
-EOSIO_ABI( eosram::token, (create)(issue)(burn)(transfer)(open) );
+EOSIO_ABI( eosram::token, (create)(issue)(burn)(transfer)(open)(close) );

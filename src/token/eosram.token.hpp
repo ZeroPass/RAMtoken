@@ -27,6 +27,9 @@ namespace eosram {
         void open(eosio::name owner, symbol_type symbol, eosio::name ram_payer);
 
         [[eosio::action]]
+        void close(eosio::name owner, symbol_type symbol);
+
+        [[eosio::action]]
         void transfer(eosio::name from, eosio::name to, asset quantity, string memo);
 
         inline asset get_supply(symbol_type sym) const;
