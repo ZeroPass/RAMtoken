@@ -24,11 +24,11 @@ namespace eosram::ds {
             return ":"sv;
         }
 
-        memo_cmd_cancel_order(transaction_id_type txid) :
+        memo_cmd_cancel_order(const tx_id_t& txid) :
             txid_(txid)
         {}
 
-        transaction_id_type txid() const {
+        const tx_id_t& txid() const {
             return txid_;
         }
 
@@ -46,12 +46,12 @@ namespace eosram::ds {
             eosio_assert(ofs + sizeof(txid_) * 2 == memo.size(), "memo_cmd_cancel_order: Invalid transaction id!");
 
             memo_cmd_cancel_order cancel_cmd;
-            cancel_cmd.txid_ = from_hex<transaction_id_type>(memo, ofs);
+            cancel_cmd.txid_ = from_hex<tx_id_t>(memo, ofs);
             return cancel_cmd;
         }
 
     private:
         memo_cmd_cancel_order() = default;
-        transaction_id_type txid_;
+        tx_id_t txid_;
     };
 }

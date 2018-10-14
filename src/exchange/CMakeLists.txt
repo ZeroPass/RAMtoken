@@ -17,26 +17,16 @@ if(CMAKE_BUILD_TYPE EQUAL "DEBUG")
     add_compile_definitions(DEBUG=1)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)  # require C++17 std
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
-
-# if no wasm root is given use default path
-if(EOSIO_CDT_ROOT STREQUAL "" OR NOT EOSIO_CDT_ROOT)
-   set(EOSIO_CDT_ROOT "/usr/local/eosio.cdt")
-endif()
-
-# append the path to the module to include
-list(APPEND CMAKE_MODULE_PATH ${EOSIO_CDT_ROOT}/lib/cmake)
-
-#include the toolchain cmake
-include(EosioWasmToolchain)
+find_package(eosio.cdt)
 
 if(GEN_ABI)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --abigen")
+    add_contract(${PROJECT_NAME} ${PROJECT_NAME} 
+        eosram.exchange.cpp 
+        ds/ram_exchange_state.cpp
+    )
+else()
+    add_executable(${PROJECT_NAME}.wasm
+        eosram.exchange.cpp 
+        ds/ram_exchange_state.cpp
+    )
 endif()
-
-add_executable(${PROJECT_NAME}.wasm 
-    "eosram.exchange.cpp" 
-    "ds/ram_exchange_state.cpp" 
-)

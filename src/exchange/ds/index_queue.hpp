@@ -2,9 +2,10 @@
 
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/multi_index.hpp>
-#include <eosiolib/optional.hpp>
+#include <eosiolib/name.hpp>
 
 #include <limits>
+#include <optional>
 #include <utility>
 #include <type_traits>
 
@@ -18,7 +19,7 @@ namespace eosram::ds {
         EOSLIB_SERIALIZE(index_queue_element, (seq))
     };
 
-    template<uint64_t QueueName, typename ValueType,  typename... Indices>
+    template<eosio::name::raw QueueName, typename ValueType,  typename... Indices>
     class index_queue
     {
         static_assert(std::is_base_of<index_queue_element, ValueType>::value, 
@@ -125,7 +126,7 @@ namespace eosram::ds {
 
 
         // Constructor
-        index_queue(uint64_t code, uint64_t scope) : 
+        index_queue(eosio::name code, uint64_t scope) : 
             qi_(code, scope)
         {}
 
@@ -139,7 +140,7 @@ namespace eosram::ds {
             return qi_.end();
         }
 
-        template<uint64_t IndexName, typename Key>
+        template<eosio::name::raw IndexName, typename Key>
         bool contains(const Key& key) const
         {
             return find<IndexName>(key) != end();
@@ -163,7 +164,7 @@ namespace eosram::ds {
             return rit;
         }
 
-        template<uint64_t IndexName, typename Key>
+        template<eosio::name::raw  IndexName, typename Key>
         const_iterator find(const Key& k) const
         {
             auto idx = qi_.template get_index<IndexName>();
@@ -174,7 +175,7 @@ namespace eosram::ds {
             return end();
         }
 
-        uint64_t get_code() const
+        eosio::name get_code() const
         {
             return qi_.get_code();
         }
@@ -194,9 +195,9 @@ namespace eosram::ds {
             });
         }
 
-        eosio::optional<ValueType> pop()
+        std::optional<ValueType> pop()
         {
-            eosio::optional<ValueType> v;
+            std::optional<ValueType> v;
             auto it = qi_.begin();
             if(it != qi_.end()) 
             {

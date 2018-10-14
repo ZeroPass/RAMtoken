@@ -1,6 +1,7 @@
 #pragma once
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/asset.hpp>
+#include <eosiolib/name.hpp>
 
 #include "index_queue.hpp"
 #include "../constants.hpp"
@@ -11,7 +12,7 @@
 namespace eosram::ds {
     using namespace eosio;
 
-    struct [[eosio::table("orderbook")]] order_t : index_queue_element
+    struct [[eosio::table("orderbook"), eosio::contract("eosram.exchange")]] order_t : index_queue_element
     {
         order_id_t id;
         asset value;
@@ -28,7 +29,7 @@ namespace eosram::ds {
         {}
 
         constexpr bool operator == (const order_t& o) const { 
-            return trader.value == o.trader.value && value == o.value;
+            return trader == o.trader && value == o.value;
         }
 
         constexpr bool operator != (const order_t& o) { return !(*this == o); }
@@ -98,7 +99,7 @@ namespace eosram::ds {
         }
 
         /** Makes new order entry at the back of the book */
-        void emplace_order(order_id_t order_id, eosio::name trader, asset value, uint32_t expiration_time, bool force_trade)
+        void emplace_order(order_id_t order_id, eosio::name trader, const asset& value, uint32_t expiration_time, bool force_trade)
         {
             order_t order;
             order.id                = order_id;
@@ -118,9 +119,9 @@ namespace eosram::ds {
             order_book(owner, get_scope())
         {}
 
-        static eosio::name get_scope() 
+        static uint64_t get_scope() 
         {
-            return EOS_TOKEN_CONTRACT;
+            return EOS_TOKEN_CONTRACT.value;
         }
     };
 
@@ -130,9 +131,9 @@ namespace eosram::ds {
             order_book(owner, get_scope())
         {}
 
-        static eosio::name get_scope() 
+        static uint64_t get_scope() 
         {
-            return RAM_TOKEN_CONTRACT;
+            return RAM_TOKEN_CONTRACT.value;
         }
     };
 }

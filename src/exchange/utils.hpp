@@ -2,7 +2,6 @@
 #include <eosiolib/action.hpp>
 #include <eosiolib/asset.hpp>
 #include <eosiolib/crypto.h>
-#include <eosiolib/dispatcher.hpp>
 #include <eosiolib/system.h>
 #include <eosiolib/transaction.h>
 #include <eosiolib/types.h>
@@ -15,44 +14,20 @@
 #include "constants.hpp"
 #include "types.hpp"
 
-#undef EOSIO_ABI
-#define EOSIO_ABI(TYPE, MEMBERS) \
-extern "C" {  \
-    void apply( uint64_t receiver, uint64_t sender, uint64_t action ) { \
-        auto self = receiver; \
-        if(action == "onerror"_n.value) { \
-            /* onerror is only valid if it is for the "eosio" sender account and authorized by "eosio"'s "active permission */ \
-            eosio_assert(sender == "eosio"_n.value, "onerror action's are only valid from the \"eosio\" system account"); \
-        } \
-        TYPE thiscontract( eosio::name{ self } ); \
-        bool action_dispatched = false; \
-        if(sender == self || action == "onerror"_n.value) { \
-            action_dispatched = true; \
-            switch( action ) { \
-                EOSIO_API( TYPE, MEMBERS ) \
-                default: action_dispatched = false; \
-            } \
-        } \
-        if(!action_dispatched) { \
-            thiscontract.on_notification(sender, action); \
-        } \
-    } \
-}
-
 
 namespace eosram {
     using eosio::asset;
     using eosio::extended_asset;
-    using eosio::symbol_type;
+    using eosio::symbol;
 
-    static void asset_assert(const asset& asset, const symbol_type& sym,  const char* msg)
+    static void asset_assert(const asset& asset, const symbol& sym,  const char* msg)
     {
         eosio_assert(asset.symbol.is_valid() , "Invalid symbol name" );
         eosio_assert(asset.symbol == sym     , msg                   );
         eosio_assert(asset.is_valid()        , "Invalid quantity."   );
     }
 
-    static void asset_assert(const asset& asset, const symbol_type& sym1, const symbol_type& sym2,  const char* msg)
+    static void asset_assert(const asset& asset, const symbol& sym1, const symbol& sym2,  const char* msg)
     {
         eosio_assert(asset.symbol.is_valid() , "Invalid symbol name");
         eosio_assert(asset.symbol == sym1  || asset.symbol == sym2 , msg);
@@ -76,14 +51,14 @@ namespace eosram {
     }
 
     /* Returns current transaction id */
-    static transaction_id_type get_txid() 
+    static tx_id_t get_txid() 
     {
         auto size = transaction_size();
         char raw_tx[size];
         uint32_t read = read_transaction(raw_tx, size);
         eosio_assert(size == read, "get_txid: read_transaction failed!");
 
-        transaction_id_type txid;
+        tx_id_t txid;
         sha256(raw_tx, size, &txid);
         return txid;
     } 
@@ -233,17 +208,17 @@ namespace eosram {
         return static_cast<int32_t>((n^neg) - neg);
     }
 
-    static std::string to_string(const symbol_type symt)
+    static std::string to_string(const symbol& sym)
     {
-        auto sym = symt.name();
+        auto sym_code = sym.code().raw();
         char str_sym[7] = {0};
         std::size_t len = 0;
         for( ; len < 7; ++len ) 
         {
-            char c = (char)(sym & 0xff);
+            char c = (char)(sym_code & 0xff);
             if( !c ) break;
             str_sym[len] = c;
-            sym >>= 8;
+            sym_code >>= 8;
         }
 
         return std::string(str_sym, len);

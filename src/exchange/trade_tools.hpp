@@ -1,14 +1,12 @@
 #pragma once
 #include <eosiolib/asset.hpp>
-#include <eosiolib/core_symbol.hpp>
+#include <eosiolib/symbol.hpp>
 
 #include "constants.hpp"
 #include "fees.hpp"
 #include "ds/ram_market.hpp"
-
-#ifndef ABIGEN
 #include "../token/eosram.token.hpp"
-#endif
+
 
 namespace eosram {
     using namespace eosio;
@@ -36,15 +34,13 @@ namespace eosram {
 
     static bool is_account_owner_of(eosio::name account, const eosio::extended_symbol& tkn_sym)
     {
-    #ifndef ABIGEN
-        token t(tkn_sym.contract);
-        return t.has_balance(account, tkn_sym.symbol);
-    #else
-        return false;
-    #endif
+        auto& ext_sym = const_cast<eosio::extended_symbol&>(tkn_sym);
+        return token::has_balance(
+            ext_sym.get_contract(), account, ext_sym.get_symbol().code()
+        );
     }
 
-    static asset min_trade_amount(symbol_type sym) 
+    static asset min_trade_amount(const symbol& sym) 
     {
         if(sym != RAM_SYMBOL)
         {

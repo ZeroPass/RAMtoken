@@ -13,7 +13,7 @@ namespace eosram {
     }
 
     /* Returns order id from transaction id */
-    static order_id_t get_order_id(const transaction_id_type& txid)
+    static order_id_t get_order_id(const tx_id_t& txid)
     {
         static_assert(sizeof(order_id_t) == sizeof(uint64_t), "size mismatch!");
         const uint64_t* p64 = reinterpret_cast<const uint64_t*>(&txid);

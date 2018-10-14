@@ -33,13 +33,13 @@ namespace eosram::ds {
     {
     public:
         ram_market() :
-            m_(k_eosio, k_eosio)
+            m_(k_eosio, k_eosio.value)
         {}
 
         const eosiosystem::exchange_state& get_state() const
         {
-            constexpr auto rc_sym = S(4, RAMCORE);
-            auto it = m_.find(rc_sym);
+            using namespace eosiosystem;
+            auto it = m_.find(ramcore_symbol.raw());
             eosio_assert(it != m_.end(), "ram_market: Could not find eosiosystem rammarket!");
             return *it;
         }
@@ -58,7 +58,8 @@ namespace eosram::ds {
         asset convert_to_eos(asset from_ram) const
         {
             auto tmp = get_state();
-            return tmp.convert(from_ram, CORE_SYMBOL);
+            using namespace eosiosystem;
+            return tmp.convert(from_ram, EOS_SYMBOL);
         }
 
         asset convert_to_ram(asset from_eos) const

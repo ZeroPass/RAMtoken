@@ -1,4 +1,5 @@
 #include "eosram.exchange.hpp"
+#include "dispatch_utils.hpp"
 #include "fees.hpp"
 #include "log.hpp"
 #include "order_timer.hpp"
@@ -17,9 +18,9 @@ using namespace std::string_literals;
 
 constexpr auto k_admin          = "admin"_n;
 constexpr auto k_clrorders      = "clrorders"_n;
-constexpr auto k_execute_order  = "execute_order"_n;
+constexpr auto k_execute_order  = "exec.order"_n;
 constexpr auto k_insorderexec   = "insorderexec"_n;
-constexpr auto k_order_expired  = "order_expired"_n;
+constexpr auto k_order_expired  = "order.expired"_n;
 
 void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, name actor, std::string reason)
 {
@@ -36,8 +37,10 @@ static bool stop_ttl_timer(order_id_t order_id) {
     return stop_order_timer(timer_id(order_id, k_order_expired));
 }
 
-exchange::exchange(name self) : 
-    contract(self),
+
+
+exchange::exchange(name self, name code, datastream<const char*> ds) :
+    contract(self, code, ds),
     bbook_(self),
     sbook_(self)
 {}
@@ -49,7 +52,7 @@ void exchange::init(name fee_recipient)
 
     exchange_state state(get_self());
     eosio_assert(!state.exists(), "Exchange is already initialized");
-    state.set({ fee_recipient, 0, false }, _self);
+    state.set({ fee_recipient, same_payer, false }, _self);
 }
 
 void exchange::setfeerecip(name account)
@@ -67,7 +70,7 @@ void exchange::setfeerecip(name account)
 void exchange::setproxy(name proxy)
 {
     require_admin();
-    eosio_assert(proxy == 0 || is_account(proxy), "Proxy is not valid account");
+    eosio_assert(!proxy || is_account(proxy), "Proxy is not valid account");
 
     exchange_state state(get_self());
     auto s = state.get();
@@ -135,14 +138,14 @@ void exchange::cancel(order_id_t order_id)
     order.value = da.value;
 
     if(da.fee.amount > 0) {
-        transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Cancel order fee");
+        transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Cancel order fee"s);
     }
 
     stop_ttl_timer(order_id);
-    handle_expired_order(order_book, std::move(order), "Order was canceled");
+    handle_expired_order(order_book, std::move(order), "Order was canceled"s);
 }
 
-void exchange::cancelbytxid(transaction_id_type txid)
+void exchange::cancelbytxid(const tx_id_t& txid)
 {
     cancel(get_order_id(txid));
 }
@@ -154,7 +157,7 @@ void exchange::execute_order(order_id_t order_id)
     if(has_order_expired(buy_order)) 
     {
         stop_ttl_timer(buy_order.id);
-        handle_expired_order(buy_book, std::move(buy_order), "Order has expired");
+        handle_expired_order(buy_book, std::move(buy_order), "Order has expired"s);
         return;
     }
 
@@ -177,7 +180,7 @@ void exchange::execute_order(order_id_t order_id)
         if(has_order_expired(sell_order)) 
         {
             stop_ttl_timer(sell_order_it->id);
-            handle_expired_order(sell_book, std::move(sell_order), "Order has expired");
+            handle_expired_order(sell_book, std::move(sell_order), "Order has expired"s);
             continue;
         }
 
@@ -204,7 +207,7 @@ void exchange::execute_order(order_id_t order_id)
 void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 {
     ram_market rm;
-    auto convert = [&](asset value, symbol_type sym) {
+    auto convert = [&](asset value, const symbol& sym) {
         if(sym == EOS_SYMBOL) {
             value = rm.convert_to_eos(value);
         } else {
@@ -249,13 +252,12 @@ void exchange::deduct_fee_and_transfer(name recipient, const asset& amount, Lamb
     if(da.fee.amount > 0){
         transfer_token(get_self(), fee_recipient(), to_token(da.fee), std::move(fee_info));
     }
-
     make_transfer(recipient, da.value, std::move(transfer_memo));
 }
 
 void exchange::make_transfer(name recipient, const asset& amount, std::string memo)
 {
-    // token transfer fee applys only if recipient is not already
+    // Token transfer fee applys only if recipient is not already
     // an owner of token he's about to receive.
     auto ext_amount = to_token(amount);
     if(!is_account_owner_of(recipient, ext_amount.get_extended_symbol()))
@@ -289,7 +291,7 @@ void exchange::transfer_token(const name from, const name to, const extended_ass
 }
 
 // Order entry point
-void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, asset value)
+void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, const asset& value)
 {
     require_running();
     require_auth(account);
@@ -305,39 +307,32 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, as
     );
 }
 
-void exchange::insert_and_execute_order(order_id_t order_id, name trader, asset value, ttl_t ttl, bool convert_on_expire)
+void exchange::insert_and_execute_order(order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool convert_on_expire)
 {
     require_auth(_self);
-    DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader account!");
+    DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader's account!");
 
-    switch(value.symbol)
-    {
-        case EOS_SYMBOL:
-        {
-            make_buy_order(order_id, trader, value, ttl, convert_on_expire);
-            return;
-        }
-        case RAM_SYMBOL:
-        {
-            make_sell_order(order_id, trader, value, ttl, convert_on_expire);
-            return;
-        }
+    if(value.symbol == EOS_SYMBOL) {
+        make_buy_order(order_id, trader, value, ttl, convert_on_expire);
+    }
+    else if(value.symbol == RAM_SYMBOL) {
+        make_sell_order(order_id, trader, value, ttl, convert_on_expire);
     }
 }
 
-void exchange::make_buy_order(order_id_t order_id, name buyer, asset value, ttl_t ttl, bool force_buy)
+void exchange::make_buy_order(order_id_t order_id, name buyer, const asset& value, ttl_t ttl, bool force_buy)
 {
     DEBUG_ASSERT(value.symbol == EOS_SYMBOL, "make_buy_order: value must be in EOS!");
     make_order_and_execute(bbook_, order_id, buyer, value, ttl, force_buy);
 }
 
-void exchange::make_sell_order(order_id_t order_id, name seller, asset value, ttl_t ttl, bool force_sell)
+void exchange::make_sell_order(order_id_t order_id, name seller, const asset& value, ttl_t ttl, bool force_sell)
 {
     DEBUG_ASSERT(value.symbol == RAM_SYMBOL, "make_sell_order: value must be in RAM!");
     make_order_and_execute(sbook_, order_id, seller, value, ttl, force_sell);
 }
 
-void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, name trader, asset value, ttl_t ttl, bool exec_on_expire)
+void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool exec_on_expire)
 {
     DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!")
     auto order_expire_time = get_order_expiration_time(ttl);
@@ -352,11 +347,11 @@ void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id,
 }
 
 // Cancel order
-void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, name account, asset value)
+void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, name account, const asset& value)
 {
     // Tranfer any value back to sender 
     if(value.amount > 0) {
-        make_transfer(account, value, "Returning excess amount");
+        make_transfer(account, value, "Returning excess amount"s);
     }
     cancelbytxid(cmd.txid());
 }
@@ -429,7 +424,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
     }
 }
 
-void exchange::issue_ram_token(asset amount)
+void exchange::issue_ram_token(const asset& amount)
 {
     constexpr auto k_issue  = "issue"_n;
     std::string memo = "Issuing RAM token: " + to_string(amount);
@@ -437,7 +432,7 @@ void exchange::issue_ram_token(asset amount)
         {{ _self, k_active }}, std::make_tuple(_self, amount, std::move(memo)));
 }
 
-void exchange::burn_ram_token(asset amount)
+void exchange::burn_ram_token(const asset& amount)
 {
     constexpr auto k_burn   = "burn"_n;
     std::string memo = "Burning RAM token: " + to_string(amount);
@@ -445,44 +440,31 @@ void exchange::burn_ram_token(asset amount)
         {{ _self, k_active }}, std::make_tuple(amount, std::move(memo)));
 }
 
-void exchange::on_notification(uint64_t sender, uint64_t action)
+void exchange::on_notification(name receiver, name code, name action)
 {
-    LOG_DEBUG("trace: exchange::on_notification: sender=% action=%", name{sender}, name{action});
-    switch (action)
+    LOG_DEBUG("trace: exchange::on_notification: sender=% action=%", code, action);
+    switch (action.value)
     {
-        case N(transfer):
-        {
-            eosio_assert(sender != _self, "Invalid action call!");
-            if(sender == EOS_TOKEN_CONTRACT || sender == RAM_TOKEN_CONTRACT) {
-                execute_action(this, &exchange::on_transfer);
-            } return;
-        }
-        case k_execute_order:
-        {
-            if(sender == _self) {
-                execute_action(this, &exchange::execute_order);
-            }
-            return;
-        }
-        case k_insorderexec:
-        {
-            eosio_assert(sender == _self, "insorderexec action's are only valid from the contract's account");
-            execute_action(this, &exchange::insert_and_execute_order);
-            return;
-        }
-        case k_order_expired:
-        {
-            if(sender == _self) {
-                execute_action(this, &exchange::on_order_expired);
-            }
-            return;
-        }
-        case N(onerror):
-        {
-            eosio_assert(sender == N(eosio), "onerror action's are only valid from the \"eosio\" system account");
-            execute_action(this, &exchange::on_error);
-            return;
-        }
+        DISPATCH_SIGNAL("transfer"_n, exchange::on_transfer,
+            eosio_assert(code != receiver, "Invalid action call!");
+            IF_CODE(EOS_TOKEN_CONTRACT, RAM_TOKEN_CONTRACT)
+        );
+
+        DISPATCH_SIGNAL(k_execute_order, exchange::execute_order,
+            IF_CONTRACT_SIGNAL
+        );
+
+        DISPATCH_SIGNAL(k_insorderexec, exchange::insert_and_execute_order,
+            eosio_assert(code == receiver, "insorderexec action's are only valid from the contract's account");
+        );
+
+        DISPATCH_SIGNAL(k_order_expired, exchange::on_order_expired,
+            IF_CONTRACT_SIGNAL
+        );
+
+        DISPATCH_SIGNAL("onerror"_n, exchange::on_error,
+            eosio_assert(code == k_eosio, "onerror action's are only valid from the \"eosio\" system account");
+        );
     }
 }
 
@@ -499,7 +481,7 @@ void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 void exchange::on_payment_received(name from, asset quantity, std::string memo)
 {
     LOG_DEBUG("eosram.exchange: received payment from: \"%\" amount: \"%\" memo: \"%\"",
-        name{ from }, quantity, memo);
+        from, quantity, memo);
 
     // Disregard payments which are not in EOS or RAM currency
     if(quantity.symbol != EOS_SYMBOL &&
@@ -581,7 +563,7 @@ bool exchange::order_exists(order_id_t id) const
 
 void exchange::require_admin() const
 {
-    require_auth2(_self, k_admin);
+    require_auth({ _self, k_admin });
 }
 
 void exchange::start()
@@ -615,7 +597,7 @@ void exchange::clrallorders(std::string reason)
     }
 }
 
-void exchange::clrorders(symbol_type sym, std::string reason)
+void exchange::clrorders(const symbol& sym, std::string reason)
 {
     require_admin();
     std::size_t limit = 8;
@@ -636,7 +618,8 @@ void exchange::clrorders(symbol_type sym, std::string reason)
 
     if(!book.empty()) 
     {
-        order_timer t(sym.value);
+        auto sym_code = static_cast<order_id_t>(sym.raw());
+        order_timer t(sym_code);
         t.set_permission(get_self(), k_admin);
         t.set_callback(get_self(), k_clrorders, sym, std::move(reason));
         t.start(5, get_self());
@@ -654,5 +637,5 @@ void exchange::require_running() const
     eosio_assert(is_running(), "RAM token exchange is stopped!");
 }
 
-EOSIO_ABI( eosram::exchange, 
+EOSIO_DISPATCH( eosram::exchange, 
     (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders) )

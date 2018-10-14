@@ -2,7 +2,7 @@
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/transaction.hpp>
-#include <eosiolib/types.hpp>
+#include <eosiolib/name.hpp>
 
 #include "constants.hpp"
 #include "ds/ram_market.hpp"
@@ -16,10 +16,10 @@
 namespace eosram {
     using namespace eosio;
 
-    class exchange : public eosio::contract
+    class [[eosio::contract("eosram.exchange")]] exchange : public eosio::contract
     {
     public:
-        exchange(eosio::name self);
+        exchange(name self, name code, datastream<const char*> ds);
 
     //public_api:
        /**
@@ -27,14 +27,14 @@ namespace eosram {
         * If ttl is -1 order will never expire.
         */
         [[eosio::action]]
-        void buy(eosio::name buyer, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_buy = true);
+        void buy(name buyer, asset value, ttl_t ttl = infinite_ttl, bool force_buy = true);
 
        /**
         * Sells RAM token on the exchange.
         * If ttl is -1 order will never expire.
         */
         [[eosio::action]]
-        void sell(eosio::name seller, eosio::asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
+        void sell(name seller, asset value, ttl_t ttl = infinite_ttl, bool force_sell = true);
 
         /** Cancels order by order id */
         [[eosio::action]]
@@ -42,17 +42,17 @@ namespace eosram {
 
         /** Cancels order by order's transaction id */
         [[eosio::action]]
-        void cancelbytxid(transaction_id_type txid);
+        void cancelbytxid(const tx_id_t& txid);
 
     //private_api:
         [[eosio::action]]
-        void init(eosio::name fee_recipient);
+        void init(name fee_recipient);
 
         [[eosio::action]]
-        void setfeerecip(eosio::name account);
+        void setfeerecip(name account);
 
         [[eosio::action]]
-        void setproxy(eosio::name proxy);
+        void setproxy(name proxy);
 
         [[eosio::action]]
         void start();
@@ -64,15 +64,15 @@ namespace eosram {
         void clrallorders(std::string reason);
 
         [[eosio::action]]
-        void clrorders(symbol_type sym, std::string reason);
+        void clrorders(const symbol& sym, std::string reason);
 
         // signal handler
-        void on_notification(uint64_t sender, uint64_t action);
+        static void on_notification(name receiver, name code, name action);
 
     private:
-        void execute_memo_cmd(const ds::memo_cmd_make_order& cmd, eosio::name account, asset value);
-        void execute_memo_cmd(const ds::memo_cmd_cancel_order& cmd, eosio::name account, asset value);
-        void start_ttl_timer(order_id_t order_id, ttl_t ttl, eosio::name actor, std::string reason);
+        void execute_memo_cmd(const ds::memo_cmd_make_order& cmd, name account, const asset& value);
+        void execute_memo_cmd(const ds::memo_cmd_cancel_order& cmd, name account, const asset& value);
+        void start_ttl_timer(order_id_t order_id, ttl_t ttl, name actor, std::string reason);
 
         ds::order_book& get_order_book_of(order_id_t order_id, const char* error_msg = "Order doesn't exists");
         ds::order_book* get_order_book_ptr_of(order_id_t id);
@@ -80,25 +80,25 @@ namespace eosram {
 
         void execute_order(order_id_t order_id);
         void execute_trade(ds::order_t& o1, ds::order_t& o2);
-        void insert_and_execute_order(order_id_t order_id, eosio::name trader, asset value, ttl_t ttl, bool force_execution);
-        void make_buy_order(order_id_t order_id, eosio::name buyer, asset value, ttl_t ttl, bool force_buy);
-        void make_sell_order(order_id_t order_id, eosio::name seller, asset value, ttl_t ttl, bool force_sell);
-        void make_order_and_execute(ds::order_book&, order_id_t order_id, eosio::name trader, asset value, ttl_t ttl, bool convert_on_expire);
+        void insert_and_execute_order(order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool force_execution);
+        void make_buy_order(order_id_t order_id, name buyer, const asset& value, ttl_t ttl, bool force_buy);
+        void make_sell_order(order_id_t order_id, name seller, const asset& value, ttl_t ttl, bool force_sell);
+        void make_order_and_execute(ds::order_book&, order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool convert_on_expire);
 
         template<typename Lambda>
-        void deduct_fee_and_transfer(eosio::name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
-        void make_transfer(eosio::name recipient, const asset& amount, std::string memo);
-        void transfer_token(const eosio::name from, const eosio::name to, const extended_asset& amount, std::string memo = "");
+        void deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
+        void make_transfer(name recipient, const asset& amount, std::string memo);
+        void transfer_token(const name from, const name to, const extended_asset& amount, std::string memo = "");
 
         void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
-        void issue_ram_token(asset amount);
-        void burn_ram_token(asset amount);
+        void issue_ram_token(const asset& amount);
+        void burn_ram_token(const asset& amount);
 
         // signal heandlers
         void on_error(onerror error);
         void on_order_expired(order_id_t order_id, std::string reason);
-        void on_payment_received(eosio::name from, asset quantity, std::string memo);
-        void on_transfer(eosio::name from, eosio::name to, asset quantity, std::string memo);
+        void on_payment_received(name from, asset quantity, std::string memo);
+        void on_transfer(name from, name to, asset quantity, std::string memo);
 
         // authorization
         void require_admin() const;
@@ -106,10 +106,8 @@ namespace eosram {
         // exchange state
         bool is_running() const;
         void require_running() const;
-        eosio::name fee_recipient() const;
-        eosio::name transfer_proxy() const;
-
-        constexpr inline eosio::name get_self() const { return eosio::name{ _self }; } // Remove in eosio.cdt 1.3
+        name fee_recipient() const;
+        name transfer_proxy() const;
 
     private:
         ds::buy_order_book bbook_;

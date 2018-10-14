@@ -21,22 +21,23 @@ class queue_test : public eosio::contract
         constexpr bool operator == (const queue_value& qv) const { 
             return key == qv.key && value == qv.value;
         }
+
         constexpr bool operator != (const queue_value& qv) { return !(*this == qv); }
         uint64_t get_key() const { return key; }
+
         EOSLIB_SERIALIZE_DERIVED(queue_value, index_queue_element, (key)(value))
     };
 
-    static constexpr uint64_t index_key = N("key");
-    typedef index_queue<N(eosq),
+    static constexpr uint64_t index_key = "key"_n;
+    typedef index_queue<"eosq"_n,
         queue_value, 
         indexed_by<index_key, const_mem_fun<queue_value, uint64_t, &queue_value::get_key>>
     > q_t;
 
 public:
-    using contract::contract;
-    queue_test(eosio::name self) :
-        contract(self.value),
-        m_q(self, self)
+    queue_test(eosio::name self, eosio::name code, eosio::datastream<const char*> ds) :
+        contract(self, code, ds),
+        m_q(self, self.value)
     {}
 
     /// @abi action 
@@ -346,7 +347,7 @@ public:
         // remove top element
         auto opt = m_q.pop();
         qv1_it = m_q.find<index_key>(qv1.key);
-        eosio_assert(opt.valid()                      , "opt.valid()");
+        eosio_assert(opt.has_value()                  , "opt.has_value()");
         eosio_assert(*opt == qv1                      , "*opt == qv1");
         eosio_assert(qv1_it == m_q.end()              , "qv1_it == m_q.end()");
         eosio_assert(!m_q.contains<index_key>(qv1.key), "!m_q.contains<index_key>(qv1.key)");
@@ -379,7 +380,7 @@ public:
         // Remove qv2
         opt = m_q.pop();
         qv2_it = m_q.find<index_key>(qv2.key);
-        eosio_assert(opt.valid()                      , "opt.valid()");
+        eosio_assert(opt.has_value()                  , "opt.has_value()");
         eosio_assert(*opt == qv2                      , "*opt == qv2");
         eosio_assert(qv2_it == m_q.end()              , "qv2_it == m_q.end()");
         eosio_assert(!m_q.contains<index_key>(qv2.key), "!m_q.contains<index_key>(qv2.key)");
@@ -407,7 +408,7 @@ public:
         // Remove qv3
         opt = m_q.pop();
         qv3_it = m_q.find<index_key>(qv3.key);
-        eosio_assert(opt.valid()                      , "opt.valid()");
+        eosio_assert(opt.has_value()                  , "opt.has_value()");
         eosio_assert(*opt == qv3                      , "*opt == qv3");
         eosio_assert(qv3_it == m_q.end()              , "qv3_it == m_q.end()");
         eosio_assert(!m_q.contains<index_key>(qv3.key), "!m_q.contains<index_key>(qv3.key)");
@@ -418,7 +419,7 @@ public:
         // Remove qv5
         opt = m_q.pop();
         qv5_it = m_q.find<index_key>(qv5.key);
-        eosio_assert(opt.valid()                      , "opt.valid()");
+        eosio_assert(opt.has_value()                  , "opt.has_value()");
         eosio_assert(*opt == qv5                      , "*opt == qv5");
         eosio_assert(qv5_it == m_q.end()              , "qv5_it == m_q.end()");
         eosio_assert(!m_q.contains<index_key>(qv5.key), "!m_q.contains<index_key>(qv5.key)");
@@ -428,7 +429,7 @@ public:
         // Remove qv7
         opt = m_q.pop();
         qv7_it = m_q.find<index_key>(qv7.key);
-        eosio_assert(opt.valid()                      , "opt.valid()");
+        eosio_assert(opt.has_value()                  , "opt.has_value()");
         eosio_assert(*opt == qv7                      , "*opt == qv7");
         eosio_assert(qv7_it == m_q.end()              , "qv7_it == m_q.end()");
         eosio_assert(!m_q.contains<index_key>(qv7.key), "!m_q.contains<index_key>(qv7.key)");
@@ -478,4 +479,4 @@ private:
     q_t m_q;
 };
 
-EOSIO_ABI( queue_test, (push)(pop)(top)(bottom)(fill)(modify)(remove)(clear)(clearrange)(printkey)(printtop)(printrange)(runtests)(onerror) )
+EOSIO_DISPATCH( queue_test, (push)(pop)(top)(bottom)(fill)(modify)(remove)(clear)(clearrange)(printkey)(printtop)(printrange)(runtests)(onerror) )

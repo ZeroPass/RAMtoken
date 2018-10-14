@@ -1,7 +1,7 @@
 #pragma once
+#include <eosiolib/name.hpp>
 #include <eosiolib/transaction.h>
 #include <eosiolib/transaction.hpp>
-#include <eosiolib/types.hpp>
 #include <utility>
 
 #include "types.hpp"
@@ -14,7 +14,7 @@ namespace eosram {
             value = (static_cast<uint128_t>(order_id) << 64) | action_name.value;
         }
 
-        timer_id(uint128_t raw_id) : 
+        explicit timer_id(uint128_t raw_id) : 
             value(std::move(raw_id))
         {}
 
@@ -26,7 +26,7 @@ namespace eosram {
             return eosio::name{ static_cast<uint64_t>(value) };
         }
 
-        operator uint128_t() const {
+        operator uint128_t const&() const {
             return value;
         }
 
@@ -61,7 +61,7 @@ namespace eosram {
             act.name = action;
         }
 
-        void set_permission(eosio::name account, permission_name permission)
+        void set_permission(eosio::name account, eosio::name permission)
         {
             set_permissions({ eosio::permission_level{account, permission} });
         }
