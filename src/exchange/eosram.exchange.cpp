@@ -1,4 +1,5 @@
 #include "eosram.exchange.hpp"
+#include "dispatch_utils.hpp"
 #include "fees.hpp"
 #include "log.hpp"
 #include "order_timer.hpp"
@@ -439,10 +440,6 @@ void exchange::burn_ram_token(const asset& amount)
         {{ _self, k_active }}, std::make_tuple(amount, std::move(memo)));
 }
 
-
-
-
-
 void exchange::on_notification(name receiver, name code, name action)
 {
     LOG_DEBUG("trace: exchange::on_notification: sender=% action=%", code, action);
@@ -451,52 +448,23 @@ void exchange::on_notification(name receiver, name code, name action)
         DISPATCH_SIGNAL("transfer"_n, exchange::on_transfer,
             eosio_assert(code != receiver, "Invalid action call!");
             IF_CODE(EOS_TOKEN_CONTRACT, RAM_TOKEN_CONTRACT)
-            /*if(code == EOS_TOKEN_CONTRACT || code == RAM_TOKEN_CONTRACT) {
-                execute_action(receiver, code, &exchange::on_transfer);
-            }*/
         );
 
         DISPATCH_SIGNAL(k_execute_order, exchange::execute_order,
-            if(receiver == code)
+            IF_CONTRACT_SIGNAL
         );
-        // case k_execute_order.value:
-        // {
-        //     if(code == receiver) {
-        //         execute_action(receiver, code, &exchange::execute_order);
-        //     }
-        //     return;
-        // }
 
         DISPATCH_SIGNAL(k_insorderexec, exchange::insert_and_execute_order,
             eosio_assert(code == receiver, "insorderexec action's are only valid from the contract's account");
         );
-        // case k_insorderexec.value:
-        // {
-        //     eosio_assert(code == receiver, "insorderexec action's are only valid from the contract's account");
-        //     execute_action(receiver, code, &exchange::insert_and_execute_order);
-        //     return;
-        // }
 
         DISPATCH_SIGNAL(k_order_expired, exchange::on_order_expired,
-            if(receiver == code)
+            IF_CONTRACT_SIGNAL
         );
-        // case k_order_expired.value:
-        // {
-        //     if(code == receiver) {
-        //         execute_action(receiver, code, &exchange::on_order_expired);
-        //     }
-        //     return;
-        // }
 
         DISPATCH_SIGNAL("onerror"_n, exchange::on_error,
             eosio_assert(code == k_eosio, "onerror action's are only valid from the \"eosio\" system account");
         );
-        // case name("onerror").value:
-        // {
-        //     eosio_assert(code == k_eosio, "onerror action's are only valid from the \"eosio\" system account");
-        //     execute_action(receiver, code, &exchange::on_error);
-        //     return;
-        // }
     }
 }
 
@@ -513,7 +481,7 @@ void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 void exchange::on_payment_received(name from, asset quantity, std::string memo)
 {
     LOG_DEBUG("eosram.exchange: received payment from: \"%\" amount: \"%\" memo: \"%\"",
-        name{ from }, quantity, memo);
+        from, quantity, memo);
 
     // Disregard payments which are not in EOS or RAM currency
     if(quantity.symbol != EOS_SYMBOL &&
