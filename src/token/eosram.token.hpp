@@ -14,7 +14,7 @@ namespace eosram {
     using eosio::symbol;
     using eosio::symbol_code;
 
-    static constexpr auto RAM_SYMBOL = symbol(symbol_code("RAM"), 0);
+    static constexpr auto RAM_SYMBOL = symbol("RAM", 0);
 
     class [[eosio::contract("eosram.token")]] token : public contract 
     {
