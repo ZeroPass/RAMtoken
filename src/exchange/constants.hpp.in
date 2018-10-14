@@ -1,19 +1,16 @@
 #pragma once
 #include <eosiolib/asset.hpp>
 #include <eosiolib/dispatcher.hpp>
+#include <eosiolib/name.hpp>
 #include <eosiolib/symbol.hpp>
 #include <eosiolib/system.h>
-#include <eosiolib/types.hpp>
 
 #include "../token/eosram.token.hpp"
 #include "types.hpp"
 
 
 namespace eosram {
-    #ifdef ABIGEN
-        static constexpr auto RAM_SYMBOL = 0;
-    #endif
-    static constexpr auto EOS_SYMBOL = CORE_SYMBOL;
+    static constexpr auto EOS_SYMBOL = eosio::symbol("EOS", 4);
     static constexpr auto EOS_TOKEN_CONTRACT = "eosio.token"_n;
     static constexpr auto EOSIO_RAM_CONTRACT = "eosio.ram"_n;
     static constexpr auto RAM_TOKEN_CONTRACT = "@RAM_TOKEN_CONTRACT@"_n;
