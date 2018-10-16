@@ -57,8 +57,7 @@ void exchange::init(name fee_recipient)
 
 void exchange::setfeerecip(name account)
 {
-    require_admin();
-    require_auth(_self);
+    require_owner();
     eosio_assert(is_account(account), "Fee recipient is not valid account");
 
     exchange_state state(get_self());
@@ -69,7 +68,7 @@ void exchange::setfeerecip(name account)
 
 void exchange::setproxy(name proxy)
 {
-    require_admin();
+    require_owner();
     eosio_assert(!proxy || is_account(proxy), "Proxy is not valid account");
 
     exchange_state state(get_self());
@@ -559,6 +558,12 @@ bool exchange::order_exists(order_id_t id) const
 {
     auto book_ptr = const_cast<exchange*>(this)-> get_order_book_ptr_of(id);
     return book_ptr != nullptr;
+}
+
+void exchange::require_owner() const
+{
+    constexpr auto k_owner = "owner"_n;
+    require_auth({ _self, k_owner });
 }
 
 void exchange::require_admin() const

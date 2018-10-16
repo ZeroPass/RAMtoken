@@ -33,8 +33,8 @@ RESULT=$($CLEOS set 'account permission' $EXCHANGE_ACCOUNT active '{"threshold":
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
 # Setup admin permissions
-set_admin_action() {
-    RESULT=$($CLEOS set 'action permission' $EXCHANGE_ACCOUNT $EXCHANGE_ACCOUNT $1 admin 2>&1)
+set_action_min_auth() {
+    RESULT=$($CLEOS set 'action permission' $EXCHANGE_ACCOUNT $EXCHANGE_ACCOUNT $1 $2 -p $EXCHANGE_ACCOUNT@owner  2>&1)
     rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 }
 
@@ -45,11 +45,11 @@ read ADMIN_PUB_KEY
 RESULT=$($CLEOS set 'account permission' $EXCHANGE_ACCOUNT admin '{"threshold": 1,"keys": [{"key": "'$ADMIN_PUB_KEY'","weight": 1}]}' owner -p $EXCHANGE_ACCOUNT@owner 2>&1)
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
-set_admin_action "start"
-set_admin_action "stop"
-set_admin_action "clrorders"
-set_admin_action "setproxy"
-set_admin_action "setfeerecip"
+set_action_min_auth "start" "admin"
+set_action_min_auth "stop" "admin"
+set_action_min_auth "clrorders" "admin"
+set_action_min_auth "setproxy" "owner"
+set_action_min_auth "setfeerecip" "owner"
 
 # Success
 echo "RAM token exchange was successfully initialized!"

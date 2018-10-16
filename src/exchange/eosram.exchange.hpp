@@ -101,6 +101,7 @@ namespace eosram {
         void on_transfer(name from, name to, asset quantity, std::string memo);
 
         // authorization
+        void require_owner() const;
         void require_admin() const;
 
         // exchange state
