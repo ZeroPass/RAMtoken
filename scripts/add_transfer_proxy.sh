@@ -76,7 +76,7 @@ else # fallback
 fi
 
 if [[ $NEW_ACTIVE_PERMS != "" ]] ; then
-    RESULT=$($CLEOS set 'account permission' $ACCOUNT active "$NEW_ACTIVE_PERMS" owner -p $ACCOUNT@active 2>&1)
+    RESULT=$($CLEOS set account permission $ACCOUNT active "$NEW_ACTIVE_PERMS" owner -p $ACCOUNT@active 2>&1)
     rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 fi
 

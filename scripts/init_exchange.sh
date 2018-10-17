@@ -29,12 +29,12 @@ echo "Adding 'eosio.code' permission to the active authority of $EXCHANGE_ACCOUN
 echo -e "\nEnter '$EXCHANGE_ACCOUNT' active permission public key: "
 read ACTIVE_PUB_KEY
 
-RESULT=$($CLEOS set 'account permission' $EXCHANGE_ACCOUNT active '{"threshold": 1,"keys": [{"key": "'$ACTIVE_PUB_KEY'","weight": 1}],"accounts": [{"permission":{"actor":"'$EXCHANGE_ACCOUNT'","permission":"eosio.code"},"weight":1}]}' owner -p $EXCHANGE_ACCOUNT@owner 2>&1)
+RESULT=$($CLEOS set account permission $EXCHANGE_ACCOUNT active '{"threshold": 1,"keys": [{"key": "'$ACTIVE_PUB_KEY'","weight": 1}],"accounts": [{"permission":{"actor":"'$EXCHANGE_ACCOUNT'","permission":"eosio.code"},"weight":1}]}' owner -p $EXCHANGE_ACCOUNT@owner 2>&1)
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
 # Setup admin permissions
 set_action_min_auth() {
-    RESULT=$($CLEOS set 'action permission' $EXCHANGE_ACCOUNT $EXCHANGE_ACCOUNT $1 $2 -p $EXCHANGE_ACCOUNT@owner  2>&1)
+    RESULT=$($CLEOS set action permission $EXCHANGE_ACCOUNT $EXCHANGE_ACCOUNT $1 $2 -p $EXCHANGE_ACCOUNT@owner  2>&1)
     rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 }
 
@@ -42,7 +42,7 @@ echo "Adding new authority 'admin' to the account '$EXCHANGE_ACCOUNT'"
 echo -e "\nEnter '$EXCHANGE_ACCOUNT' admin permission public key: "
 read ADMIN_PUB_KEY
 
-RESULT=$($CLEOS set 'account permission' $EXCHANGE_ACCOUNT admin '{"threshold": 1,"keys": [{"key": "'$ADMIN_PUB_KEY'","weight": 1}]}' owner -p $EXCHANGE_ACCOUNT@owner 2>&1)
+RESULT=$($CLEOS set account permission $EXCHANGE_ACCOUNT admin '{"threshold": 1,"keys": [{"key": "'$ADMIN_PUB_KEY'","weight": 1}]}' owner -p $EXCHANGE_ACCOUNT@owner 2>&1)
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
 set_action_min_auth "start" "admin"
