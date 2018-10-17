@@ -82,7 +82,7 @@ namespace eosram {
     * @param const reference to order
     * @returns True if order was removed, else False.
     */
-    static bool update_or_erase_order(ds::order_book& book, const ds::order_t& order)
+    static bool erase_order_or_update(ds::order_book& book, const ds::order_t& order)
     {
         if(order.value.amount > 0LL) 
         {
