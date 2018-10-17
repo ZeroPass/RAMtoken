@@ -18,7 +18,7 @@ namespace eosram {
     static constexpr auto k_active = "active"_n;
     static constexpr auto k_eosio  = "eosio"_n;
 
-    static constexpr int32_t  min_ttl                = 1;       // 1sec
+    static constexpr int32_t  min_ttl                 = minutes_to_ttl(1);
     static constexpr bool     req_convert_on_ote      = true;    // Force convert if order executes only one time.
     static constexpr ttl_t    infinite_ttl            = -1;
     static constexpr int64_t  transfer_fee_in_ram     = 250;
