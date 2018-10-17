@@ -5,6 +5,7 @@
 
 #include "constants.hpp"
 #include "types.hpp"
+#include "utils.hpp"
 #include "ds/order_book.hpp"
 
 namespace eosram {
@@ -22,12 +23,20 @@ namespace eosram {
         return order_id_l ^ order_id_r;
     }
 
-    static bool ttl_infinite(ttl_t ttl) {
+    inline constexpr bool is_ote_order(ttl_t ttl) {
+        return ttl == 0;
+    }
+
+    inline bool is_ote_order(uint32_t expiration_time) {
+        return expiration_time == now();
+    }
+
+    inline constexpr bool ttl_infinite(ttl_t ttl) {
         return ttl <= infinite_ttl;
     }
 
-    static bool ttl_valid(ttl_t ttl) {
-        return ttl_infinite(ttl) || ttl >= min_ttl;
+    inline constexpr bool ttl_valid(ttl_t ttl) {
+        return ttl_infinite(ttl) || is_ote_order(ttl) || ttl >= min_ttl;
     }
 
    /**

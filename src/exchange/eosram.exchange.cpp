@@ -94,6 +94,7 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
     require_auth(buyer);
     eosio_assert(buyer != _self, "Contract account cannot buy!");
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
+    eosio_assert(!is_ote_order(ttl) || force_buy, "OTE order shoud have force_buy = True!");
     
     // Verifying asset (must be valid EOS token)
     asset_assert(quantity, EOS_SYMBOL, "The value must be in EOS.");
@@ -109,6 +110,7 @@ void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
     require_auth(seller);
     eosio_assert(seller != _self, "Contract account cannot sell!" );
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
+    eosio_assert(!is_ote_order(ttl) || force_sell, "OTE order shoud have force_sell = True!");
 
     // Verifying asset (must be valid RAM token)
     asset_assert(quantity, RAM_SYMBOL, "The value must be in RAM.");
@@ -153,7 +155,9 @@ void exchange::execute_order(order_id_t order_id)
 {
     auto& buy_book = get_order_book_of(order_id);
     auto buy_order = buy_book.get(order_id);
-    if(has_order_expired(buy_order)) 
+
+    const bool is_ote = is_ote_order(buy_order.expiration_time);
+    if(!is_ote && has_order_expired(buy_order)) 
     {
         stop_ttl_timer(buy_order.id);
         handle_expired_order(buy_book, std::move(buy_order), "Order has expired"s);
@@ -192,6 +196,11 @@ void exchange::execute_order(order_id_t order_id)
 
     if(update_or_erase_order(buy_book, buy_order)) {
         stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
+    }
+    else if(is_ote) 
+    {
+        stop_ttl_timer(buy_order.id);
+        handle_expired_order(buy_book, std::move(buy_order), "Order has expired"s);
     }
     // Execute another order loop?
     else if(sell_order_it != sell_book.end()) 

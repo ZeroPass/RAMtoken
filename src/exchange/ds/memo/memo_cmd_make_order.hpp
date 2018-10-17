@@ -72,6 +72,9 @@ namespace eosram::ds {
 
                 order_cmd.set_convert(true);
             }
+            else if(req_convert_on_ote) {
+                eosio_assert(!is_ote_order(order_cmd.ttl()), "OTE order requires arg 'convert'");
+            }
 
             return order_cmd;
         }
