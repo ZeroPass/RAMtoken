@@ -102,7 +102,10 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
 
     // Transfer EOS token to contract account and execute buy order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_buy).to_string();
-    transfer_token(buyer, get_self(), eos_token(quantity), std::move(memo_cmd));
+    transfer_token(
+        buyer, get_self(), eos_token(quantity), std::move(memo_cmd),
+        /*deferred=*/true
+    );
 }
 
 void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
@@ -118,7 +121,10 @@ void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
 
     // Transfer RAM token to contract account and execute sell order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_sell).to_string();
-    transfer_token(seller, get_self(), ram_token(quantity), std::move(memo_cmd));
+    transfer_token(
+        seller, get_self(), ram_token(quantity), std::move(memo_cmd),
+        /*deferred=*/true
+    );
 }
 
 void exchange::cancel(order_id_t order_id)
@@ -283,19 +289,29 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
     }
 }
 
-void exchange::transfer_token(const name from, const name to, const extended_asset& amount, std::string memo)
+void exchange::transfer_token(const name from, const name to, const extended_asset& amount, std::string memo, bool deferred)
 {
     eosio_assert(amount.quantity.is_valid(), "Cannot transfer invalid amount!" );
     name proxy = [&] {
         if(to != _self && to != fee_recipient()) {
             return transfer_proxy();
         }
-        return name{ 0ULL };
+        return name();
     }();
     
-    inline_transfer(proxy, { from, k_active },
-        from, to, amount, std::move(memo)
-    );
+    if(deferred)
+    {
+        deferred_transfer(proxy, { from, k_active },
+            from, to, amount, std::move(memo)
+        );
+    }
+    else 
+    {
+        inline_transfer(proxy, { from, k_active },
+            from, to, amount, std::move(memo)
+        );
+    }
+    
 }
 
 // Order entry point

@@ -34,7 +34,7 @@ namespace eosram {
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }
 
-    static void inline_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
+    static eosio::action make_transfer_action(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
     {
         eosio::action ta;
         ta.account = proxy ? proxy : amount.contract;
@@ -47,6 +47,27 @@ namespace eosram {
             return pack(std::make_tuple(from, to, std::move(amount.quantity), std::move(memo)));
         }();
 
+        return ta;
+    }
+
+    static void deferred_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
+    {
+        eosio::action ta = make_transfer_action(
+            proxy, perm, from, to, amount, memo
+        );
+    
+        eosio::transaction tx;
+        tx.actions.push_back(std::move(ta));
+
+        uint128_t sender_id = (static_cast<uint128_t>(from.value) << 64) | to.value;
+        tx.send(sender_id, from, true);
+    }
+
+    inline void inline_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
+    {
+        eosio::action ta = make_transfer_action(
+            proxy, perm, from, to, amount, memo
+        );
         ta.send();
     }
 
