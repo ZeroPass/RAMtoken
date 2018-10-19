@@ -58,8 +58,6 @@ Fee account
 *• active*  
 
 ## Ricardian Contract
-This exchange and token deployment is subject to [Ricardian Contract](https://github.com/ChainRift/RAMtoken/blob/master/bin/exchange/ram.exchange_rc.md)
+This exchange and token deployment is subject to [Ricardian Contract](https://github.com/ChainRift/RAMtoken/blob/master/bin/exchange/ram.exchange_rc.md). 
 This Ricardian Contract is writen in the spirit of "v2 constitution".
-
-
 
