@@ -27,22 +27,22 @@ Or
 ## Accounts
 
 #### Mainet
-Exchange: `ramtokendapp`  
-Token: `ramtokenmoon`  
-Exchange fee: `ramtokenfees`  
-Transfer proxy: `proxytransax`  
+Exchange: [ramtokendapp](https://bloks.io/account/ramtokendapp)  
+Token: [ramtokenmoon](https://bloks.io/account/ramtokenmoon)  
+Exchange fee: [ramtokenfees](https://bloks.io/account/ramtokenfees)  
+Transfer proxy: [proxytransax](https://bloks.io/account/proxytransax) 
 
 #### CryptoKylin testnet:
-Exchange: `eramexchange`  
-Token: `ramramramtkn`  
-Exchange fee: `ramxchangfee`  
-Transfer proxy: `proxytransax`  
+Exchange: [eramexchange](https://kylin.bloks.io/account/eramexchange)  
+Token: [ramramramtkn](https://kylin.bloks.io/account/ramramramtkn)  
+Exchange fee: [ramxchangfee](https://kylin.bloks.io/account/ramxchangfee)  
+Transfer proxy: [proxytransax](https://kylin.bloks.io/account/proxytransax)  
 
 #### Jungle testnet:
-Exchange: `turbotest123`  
-Token: `ram.token`  
-Exchange fee: `ramxchangfee`  
-Transfer proxy: `proxytransax`  
+Exchange: [turbotest123](https://jungle.bloks.io/account/turbotest123)    
+Token: [ram.token](https://jungle.bloks.io/account/ram.token) 
+Exchange fee: [ramxchangfee](https://jungle.bloks.io/account/ramxchangfee)
+Transfer proxy: [proxytransax](https://jungle.bloks.io/account/proxytransax)
 
 ## Permissions  
 
