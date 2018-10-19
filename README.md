@@ -4,9 +4,9 @@
 You can either use:
 ### Transfer With Memo  
 Send either EOS (to buy RAM) or RAM (to sell RAM)  
-And then put in the memo on of the options;
-`ttl,convert`(waits in the exchange for a buyer, if not matched, converts on tll expire)
-`ttl` (0-uint32 in minutes, waits on exchange, if not matched, send back on tll expire)    
+And then put in the memo on of the options;  
+`ttl,convert`(waits in the exchange for a buyer, if not matched, converts on tll expire)  
+`ttl` (0-uint32 in minutes, waits on exchange, if not matched, send back on tll expire)     
 `[null]` and then `ttl,cancel:txid”64 characters”` (without the quotes) to cancel it/withdraw
 
 Or: 
