@@ -32,13 +32,17 @@ Token: `ramtokenmoon`
 Exchange fee: `ramtokenfees`  
 Transfer proxy: `proxytransax`  
 
-
 #### CryptoKylin testnet:
 Exchange: `eramexchange`  
 Token: `ramramramtkn`  
 Exchange fee: `ramxchangfee`  
 Transfer proxy: `proxytransax`  
 
+#### Jungle testnet:
+Exchange: `turbotest123`  
+Token: `ram.token`  
+Exchange fee: `ramxchangfee`  
+Transfer proxy: `proxytransax`  
 
 ## Permissions  
 
