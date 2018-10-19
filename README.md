@@ -40,9 +40,9 @@ Transfer proxy: [proxytransax](https://kylin.bloks.io/account/proxytransax)
 
 #### Jungle testnet:
 Exchange: [turbotest123](https://jungle.bloks.io/account/turbotest123)    
-Token: [ram.token](https://jungle.bloks.io/account/ram.token) 
-Exchange fee: [ramxchangfee](https://jungle.bloks.io/account/ramxchangfee)
-Transfer proxy: [proxytransax](https://jungle.bloks.io/account/proxytransax)
+Token: [ram.token](https://jungle.bloks.io/account/ram.token)  
+Exchange fee: [ramxchangfee](https://jungle.bloks.io/account/ramxchangfee)  
+Transfer proxy: [proxytransax](https://jungle.bloks.io/account/proxytransax)  
 
 ## Permissions  
 
