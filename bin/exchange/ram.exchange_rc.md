@@ -7,7 +7,7 @@ DEFINITION. RAM exchange is an open-source smart contract that buys/sells RAM by
 RAM token allows wallet and exchanges to fully leverage their existing token infrastructure.
 
 ### CLAUSE NAME: Intent of the Code
-INTENT OF THE CODE. The exchange's contract code should never allow *ramtokendapp* contract to issue or contain more RAM tokens than the amount of RAM bytes bought to peg the issued RAM tokens.
+The exchange's contract code should never allow *ramtokendapp* contract to issue or contain more RAM tokens than the amount of RAM bytes bought to peg the issued RAM tokens.
 If a bug in the contract allowed this to occur the arbitration forum or block-producers should restore the peg within their ability.
 If the peg is impossible to restore due to the inability to recover the funds, the socialised losses would be applied to all accounts (same %) and all of the contract future fees would be used exclusively to make all of the user accounts whole again.
 
@@ -15,3 +15,6 @@ If the peg is impossible to restore due to the inability to recover the funds, t
 AMENDMENT. The contract might be modified or amended with bug fixes or new features. RAM exchange and RAM token transfers might be frozen during the time of fixing the bugs, restoring the peg or during the maintenance and upgrade.
 In no way would the contract's owner account be used to access or modify users balance that were not a result of a bug or contract's unexpected behaviour.
 If that still happens, the arbitration forum or block-producers should restore the contract's previous state within their ability. 
+
+### CLAUSE NAME: Maintainer contract code repository
+https://github.com/ChainRift/RAMtoken/

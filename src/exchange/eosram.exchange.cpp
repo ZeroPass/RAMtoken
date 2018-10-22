@@ -57,8 +57,7 @@ void exchange::init(name fee_recipient)
 
 void exchange::setfeerecip(name account)
 {
-    require_admin();
-    require_auth(_self);
+    require_owner();
     eosio_assert(is_account(account), "Fee recipient is not valid account");
 
     exchange_state state(get_self());
@@ -69,7 +68,7 @@ void exchange::setfeerecip(name account)
 
 void exchange::setproxy(name proxy)
 {
-    require_admin();
+    require_owner();
     eosio_assert(!proxy || is_account(proxy), "Proxy is not valid account");
 
     exchange_state state(get_self());
@@ -95,6 +94,7 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
     require_auth(buyer);
     eosio_assert(buyer != _self, "Contract account cannot buy!");
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
+    eosio_assert(!is_ote_order(ttl) || force_buy, "OTE order shoud have force_buy = True!");
     
     // Verifying asset (must be valid EOS token)
     asset_assert(quantity, EOS_SYMBOL, "The value must be in EOS.");
@@ -102,7 +102,10 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
 
     // Transfer EOS token to contract account and execute buy order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_buy).to_string();
-    transfer_token(buyer, get_self(), eos_token(quantity), std::move(memo_cmd));
+    transfer_token(
+        buyer, get_self(), eos_token(quantity), std::move(memo_cmd),
+        /*deferred=*/true
+    );
 }
 
 void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
@@ -110,6 +113,7 @@ void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
     require_auth(seller);
     eosio_assert(seller != _self, "Contract account cannot sell!" );
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
+    eosio_assert(!is_ote_order(ttl) || force_sell, "OTE order shoud have force_sell = True!");
 
     // Verifying asset (must be valid RAM token)
     asset_assert(quantity, RAM_SYMBOL, "The value must be in RAM.");
@@ -117,7 +121,10 @@ void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
 
     // Transfer RAM token to contract account and execute sell order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_sell).to_string();
-    transfer_token(seller, get_self(), ram_token(quantity), std::move(memo_cmd));
+    transfer_token(
+        seller, get_self(), ram_token(quantity), std::move(memo_cmd),
+        /*deferred=*/true
+    );
 }
 
 void exchange::cancel(order_id_t order_id)
@@ -154,7 +161,9 @@ void exchange::execute_order(order_id_t order_id)
 {
     auto& buy_book = get_order_book_of(order_id);
     auto buy_order = buy_book.get(order_id);
-    if(has_order_expired(buy_order)) 
+
+    const bool is_ote = is_ote_order(buy_order.expiration_time);
+    if(!is_ote && has_order_expired(buy_order)) 
     {
         stop_ttl_timer(buy_order.id);
         handle_expired_order(buy_book, std::move(buy_order), "Order has expired"s);
@@ -186,13 +195,18 @@ void exchange::execute_order(order_id_t order_id)
 
         execute_trade(buy_order, sell_order);
 
-        if(update_or_erase_order(sell_book, sell_order)) {
+        if(erase_order_or_update(sell_book, sell_order)) {
             stop_ttl_timer(sell_order.id); // Order was deleted, stop it's ttl timer
         }
     }
 
-    if(update_or_erase_order(buy_book, buy_order)) {
+    if(erase_order_or_update(buy_book, buy_order)) {
         stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
+    }
+    else if(is_ote) 
+    {
+        stop_ttl_timer(buy_order.id);
+        handle_expired_order(buy_book, std::move(buy_order), "OTE order"s);
     }
     // Execute another order loop?
     else if(sell_order_it != sell_book.end()) 
@@ -275,19 +289,29 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
     }
 }
 
-void exchange::transfer_token(const name from, const name to, const extended_asset& amount, std::string memo)
+void exchange::transfer_token(const name from, const name to, const extended_asset& amount, std::string memo, bool deferred)
 {
     eosio_assert(amount.quantity.is_valid(), "Cannot transfer invalid amount!" );
     name proxy = [&] {
         if(to != _self && to != fee_recipient()) {
             return transfer_proxy();
         }
-        return name{ 0ULL };
+        return name();
     }();
     
-    inline_transfer(proxy, { from, k_active },
-        from, to, amount, std::move(memo)
-    );
+    if(deferred)
+    {
+        deferred_transfer(proxy, { from, k_active },
+            from, to, amount, std::move(memo)
+        );
+    }
+    else 
+    {
+        inline_transfer(proxy, { from, k_active },
+            from, to, amount, std::move(memo)
+        );
+    }
+    
 }
 
 // Order entry point
@@ -559,6 +583,12 @@ bool exchange::order_exists(order_id_t id) const
 {
     auto book_ptr = const_cast<exchange*>(this)-> get_order_book_ptr_of(id);
     return book_ptr != nullptr;
+}
+
+void exchange::require_owner() const
+{
+    constexpr auto k_owner = "owner"_n;
+    require_auth({ _self, k_owner });
 }
 
 void exchange::require_admin() const

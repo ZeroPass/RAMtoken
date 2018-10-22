@@ -53,7 +53,7 @@ namespace eosram::ds {
 
             // Parse ttl
             std::size_t parse_pos = 0UL;
-            const ttl_t ttl = to_number(memo, &parse_pos);
+            const ttl_t ttl = minutes_to_ttl(to_number(memo, &parse_pos));
             order_cmd.set_ttl(ttl);
 
             // Verify parser state
@@ -71,6 +71,9 @@ namespace eosram::ds {
                     "memo_cmd_make_order: Invalid argument!");
 
                 order_cmd.set_convert(true);
+            }
+            else if(req_convert_on_ote) {
+                eosio_assert(!is_ote_order(order_cmd.ttl()), "OTE order requires arg 'convert'");
             }
 
             return order_cmd;

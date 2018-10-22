@@ -28,7 +28,7 @@ RESULT=$($CLEOS push action -x$TX_TTL $PROXY $ABI_ACTION_SIGNUP '["'$ACCOUNT'"]'
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
 # Add proxy to contract
-RESULT=$($CLEOS push action -x$TX_TTL $ACCOUNT $ABI_ACTION_SETUP_PROXY '["'$PROXY'"]' -p $ACCOUNT@admin 2>&1)
+RESULT=$($CLEOS push action -x$TX_TTL $ACCOUNT $ABI_ACTION_SETUP_PROXY '["'$PROXY'"]' -p $ACCOUNT@owner 2>&1)
 rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 
 # Add permissions to account
@@ -76,7 +76,7 @@ else # fallback
 fi
 
 if [[ $NEW_ACTIVE_PERMS != "" ]] ; then
-    RESULT=$($CLEOS set 'account permission' $ACCOUNT active "$NEW_ACTIVE_PERMS" owner -p $ACCOUNT@active 2>&1)
+    RESULT=$($CLEOS set account permission $ACCOUNT active "$NEW_ACTIVE_PERMS" owner -p $ACCOUNT@active 2>&1)
     rc=$?; if [[ $rc != 0 ]]; then (1>&2 echo "$RESULT"); exit $rc; fi
 fi
 
