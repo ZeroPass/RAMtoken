@@ -206,7 +206,7 @@ void exchange::execute_order(order_id_t order_id)
     else if(is_ote) 
     {
         stop_ttl_timer(buy_order.id);
-        handle_expired_order(buy_book, std::move(buy_order), "OTE order"s);
+        handle_expired_order(buy_book, std::move(buy_order), ""s);
     }
     // Execute another order loop?
     else if(sell_order_it != sell_book.end()) 
@@ -284,7 +284,7 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
         }
     }
 
-    if(amount.amount > 0) {
+    if(ext_amount.quantity.amount > 0) {
         transfer_token(get_self(), recipient, ext_amount, std::move(memo));
     }
 }
@@ -311,7 +311,6 @@ void exchange::transfer_token(const name from, const name to, const extended_ass
             from, to, amount, std::move(memo)
         );
     }
-    
 }
 
 // Order entry point
