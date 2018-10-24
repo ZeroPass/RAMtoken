@@ -279,13 +279,31 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
         auto da = deduct_fee(ext_amount.quantity, token_transfer_fee);
         ext_amount.quantity.amount = da.value.amount;
         
-        if(da.fee.amount > 0) {
+        if(da.value.amount > 0) {
+            open_token_balance(recipient, to_token(da.fee));
+        }
+        else {
             transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee");
         }
     }
 
     if(ext_amount.quantity.amount > 0) {
         transfer_token(get_self(), recipient, ext_amount, std::move(memo));
+    }
+}
+
+void exchange::open_token_balance(const name owner, const extended_asset& fee)
+{
+    // Note: when open action is supported by eosio.token update if statement.
+
+    const auto& sym = fee.quantity.symbol;
+    if(sym == RAM_SYMBOL)
+    {
+        burn_ram_token(fee.quantity);
+        constexpr static auto k_open = "open"_n;
+        dispatch_inline(fee.contract, k_open, {{ _self, k_active }},
+            std::make_tuple(owner, sym, _self)
+        );
     }
 }
 
@@ -451,16 +469,18 @@ void exchange::issue_ram_token(const asset& amount)
 {
     constexpr auto k_issue  = "issue"_n;
     std::string memo = "Issuing RAM token: " + to_string(amount);
-    dispatch_inline(RAM_TOKEN_CONTRACT, k_issue,
-        {{ _self, k_active }}, std::make_tuple(_self, amount, std::move(memo)));
+    dispatch_inline(RAM_TOKEN_CONTRACT, k_issue, {{ _self, k_active }},
+        std::make_tuple(_self, amount, std::move(memo))
+    );
 }
 
 void exchange::burn_ram_token(const asset& amount)
 {
     constexpr auto k_burn   = "burn"_n;
     std::string memo = "Burning RAM token: " + to_string(amount);
-    dispatch_inline(RAM_TOKEN_CONTRACT, k_burn,
-        {{ _self, k_active }}, std::make_tuple(amount, std::move(memo)));
+    dispatch_inline(RAM_TOKEN_CONTRACT, k_burn, {{ _self, k_active }},
+        std::make_tuple(amount, std::move(memo))
+    );
 }
 
 void exchange::on_notification(name receiver, name code, name action)
