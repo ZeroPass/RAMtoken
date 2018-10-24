@@ -280,7 +280,7 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
         ext_amount.quantity.amount = da.value.amount;
         
         if(da.value.amount > 0) {
-            open_token_balance(recipient, to_token(da.fee));
+            open_token_balance(recipient, to_token(da.fee), true);
         }
         else {
             transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee");
@@ -292,14 +292,17 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
     }
 }
 
-void exchange::open_token_balance(const name owner, const extended_asset& fee)
+void exchange::open_token_balance(const name owner, const extended_asset& fee, const bool burn_token)
 {
     // Note: when open action is supported by eosio.token update if statement.
 
     const auto& sym = fee.quantity.symbol;
     if(sym == RAM_SYMBOL)
     {
-        burn_ram_token(fee.quantity);
+        if(burn_token) {
+            burn_ram_token(fee.quantity);
+        }
+
         constexpr static auto k_open = "open"_n;
         dispatch_inline(fee.contract, k_open, {{ _self, k_active }},
             std::make_tuple(owner, sym, _self)
