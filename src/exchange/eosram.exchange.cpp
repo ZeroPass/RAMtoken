@@ -544,7 +544,7 @@ void exchange::on_notification(name receiver, name code, name action)
 
 void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 {
-    if (from != EOSIO_RAM_CONTRACT && to == _self)
+    if (from != EOSIO_RAM_CONTRACT && from != fee_recipient() && to == _self)
     {
         eosio_assert(quantity.is_valid(), "Invalid quantity in transfer" );
         eosio_assert(quantity.amount > 0, "Transferred quantity must be positive value");
