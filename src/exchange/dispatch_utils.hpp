@@ -19,7 +19,7 @@ extern "C" {  \
     } \
 }
 
-namespace eosram::details {
+namespace eosram::detail {
     template<class none = void>
     inline constexpr bool code_equals(eosio::name code)
     {
@@ -37,7 +37,7 @@ namespace eosram::details {
 }
 
 #define IF_CODE(...) \
-    if(eosram::details::code_equals<__VA_ARGS__>(code))
+    if(eosram::detail::code_equals<__VA_ARGS__>(code))
 
 #define IF_CONTRACT_SIGNAL if(receiver == code)
 
