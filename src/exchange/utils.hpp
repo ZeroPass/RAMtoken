@@ -20,6 +20,12 @@ namespace eosram {
     using eosio::extended_asset;
     using eosio::symbol;
 
+    namespace detail {
+        inline std::string gen_proxy_memo(eosio::name recipient, std::string&& memo) {
+            return recipient.to_string() + " " + std::move(memo);
+        }
+    }
+
     static void asset_assert(const asset& asset, const symbol& sym,  const char* msg)
     {
         eosio_assert(asset.symbol.is_valid() , "Invalid symbol name" );
@@ -36,13 +42,17 @@ namespace eosram {
 
     static eosio::action make_transfer_action(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
     {
+        using namespace detail;
+
         eosio::action ta;
-        ta.account = proxy ? proxy : amount.contract;
+        ta.account = amount.contract;
         ta.name = "transfer"_n;
         ta.authorization.emplace_back(from, k_active);
         ta.data = [&]{
-            if(proxy) {
-                return pack(std::make_tuple(from, to, std::move(amount), std::move(memo)));
+            if(proxy) 
+            {
+                memo = gen_proxy_memo(to, std::move(memo));
+                to = proxy;
             }
             return pack(std::make_tuple(from, to, std::move(amount.quantity), std::move(memo)));
         }();
