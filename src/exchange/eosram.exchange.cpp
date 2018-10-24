@@ -159,17 +159,8 @@ void exchange::cancelbytxid(const tx_id_t& txid)
 
 void exchange::execute_order(order_id_t order_id)
 {
-    auto& buy_book = get_order_book_of(order_id);
-    auto buy_order = buy_book.get(order_id);
-
-    const bool is_ote = is_ote_order(buy_order.expiration_time);
-    if(!is_ote && has_order_expired(buy_order)) 
-    {
-        stop_ttl_timer(buy_order.id);
-        handle_expired_order(buy_book, std::move(buy_order), "Order has expired"s);
-        return;
-    }
-
+    auto& buy_book  = get_order_book_of(order_id);
+    auto buy_order  = buy_book.get(order_id);
     auto& sell_book = [&]() -> order_book& {
         if(buy_book.get_scope() == buy_order_book::get_scope()) {
             return sbook_;
@@ -177,44 +168,29 @@ void exchange::execute_order(order_id_t order_id)
         return bbook_;
     }();
 
-    auto sell_order_it = sell_book.top();
-    uint32_t limit = order_execution_limit;
-    while(limit --> 0 && 
-          buy_order.value.amount > 0 && 
-          sell_order_it != sell_book.end())
-    {
-        auto sell_order = *sell_order_it;
-        ++sell_order_it;
+    const bool is_ote = is_ote_order(buy_order.expiration_time);
+    if(preflight_check(buy_book, std::move(buy_order), is_ote)) {
+        execute_trade_loop(buy_order, sell_book);
+    }
 
-        if(has_order_expired(sell_order)) 
+    if(buy_book.contains(order_id))
+    {
+        if(erase_order_or_update(buy_book, buy_order)) {
+            stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
+        }
+        else if(is_ote) 
         {
-            stop_ttl_timer(sell_order_it->id);
-            handle_expired_order(sell_book, std::move(sell_order), "Order has expired"s);
-            continue;
+            stop_ttl_timer(buy_order.id);
+            handle_expired_order(buy_book, std::move(buy_order), ""s);
         }
-
-        execute_trade(buy_order, sell_order);
-
-        if(erase_order_or_update(sell_book, sell_order)) {
-            stop_ttl_timer(sell_order.id); // Order was deleted, stop it's ttl timer
+        // Execute another order loop?
+        else if(sell_book.top() != sell_book.end())
+        {
+            order_timer t(buy_order.id);
+            t.set_permission(buy_order.trader, k_active);
+            t.set_callback(get_self(), k_execute_order, buy_order.id);
+            t.start(order_execution_delay, buy_order.trader);
         }
-    }
-
-    if(erase_order_or_update(buy_book, buy_order)) {
-        stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
-    }
-    else if(is_ote) 
-    {
-        stop_ttl_timer(buy_order.id);
-        handle_expired_order(buy_book, std::move(buy_order), ""s);
-    }
-    // Execute another order loop?
-    else if(sell_order_it != sell_book.end()) 
-    {
-        order_timer t(buy_order.id);
-        t.set_permission(buy_order.trader, k_active);
-        t.set_callback(get_self(), k_execute_order, buy_order.id);
-        t.start(order_execution_delay, buy_order.trader);
     }
 }
 
@@ -257,6 +233,58 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 
     o1.value -= o2_receive_amount;
     o2.value -= o1_receive_amount;
+}
+
+void exchange::execute_trade_loop(ds::order_t& buy_order, ds::order_book& sell_book)
+{
+    auto sell_order_it = sell_book.top();
+    uint32_t limit = order_execution_limit;
+
+    while(limit --> 0 && 
+        buy_order.value.amount > 0 && 
+        sell_order_it != sell_book.end())
+    {
+        auto sell_order = *sell_order_it;
+        ++sell_order_it;
+
+        if(preflight_check(sell_book, std::move(sell_order), false))
+        {
+            execute_trade(buy_order, sell_order);
+            if(erase_order_or_update(sell_book, sell_order)) {
+                stop_ttl_timer(sell_order.id); // Order was deleted, stop it's ttl timer
+            }
+        }
+    }
+}
+
+bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order, bool ote_order)
+{
+    if(!ote_order && has_order_expired(order)) 
+    {
+        stop_ttl_timer(order.id);
+        handle_expired_order(book, std::move(order), "Order has expired"s);
+        return false;
+    }
+
+    if(order.value.symbol == EOS_SYMBOL && // Buying ram token?
+       !is_account_owner_of(order.trader, ram_symbol()))
+    {
+        auto da = deduct_fee(order.value, token_transfer_fee);
+        if(da.value.amount > 0)
+        {
+            ram_market rm;
+            rm.buyram(_self, _self, da.fee);
+
+            auto fee = to_token(rm.convert_to_ram(da.fee));
+            open_token_balance(order.trader, fee, false);
+
+            order.value.amount = da.value.amount;
+            book.modify(order, order.trader);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 template<typename Lambda>
