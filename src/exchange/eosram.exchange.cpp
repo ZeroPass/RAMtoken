@@ -266,10 +266,27 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order, bool o
         return false;
     }
 
-    if(order.value.symbol == EOS_SYMBOL && // Buying ram token?
+   /**
+    * We check here if order is trading EOS token for RAM token and if recipient of RAM token (the owner of order) 
+    * has already opened balance account on RAM token contract. If not, we deduce EOS token from the total 
+    * amount of order value, buy ram bytes for the exchange and open balance account for the recipient
+    * paied by exchange.
+    *
+    * We don't do this check for EOS token since eosio.token contract does not support open token action.
+    * We then assume here, that make_transfer function will deduce appropriate amount of transfer fee
+    * from the traded amount after the trade has been executed. Also proxy or make_transfer 
+    * function should reserve/buy accurate amount of ram for the transfer of EOS token.
+    * This is charged to this exchange account and paied by deduced fee.
+    */
+    if(is_buy_order(order) && // Buying ram token?
        !is_account_owner_of(order.trader, ram_symbol()))
     {
         auto da = deduct_fee(order.value, token_transfer_fee);
+
+        /* 
+        * If deduced amount is less then 1, the make_transfer function should
+        * consume traded RAM tokens as transfer fee.
+        */
         if(da.value.amount > 0)
         {
             ram_market rm;
@@ -310,7 +327,10 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
         if(da.value.amount > 0) {
             open_token_balance(recipient, to_token(da.fee), true);
         }
-        else {
+        else 
+        { 
+            // We consume transferred amount as fee since it's not enough
+            // to open a token balance account for the recipient.
             transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee");
         }
     }
@@ -320,21 +340,26 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
     }
 }
 
-void exchange::open_token_balance(const name owner, const extended_asset& fee, const bool burn_token)
+void exchange::open_token_balance(const name owner, const extended_asset& buy_ram_amount, const bool burn_token)
 {
-    // Note: when open action is supported by eosio.token update if statement.
-
-    const auto& sym = fee.quantity.symbol;
+    const auto& sym = buy_ram_amount.quantity.symbol;
     if(sym == RAM_SYMBOL)
     {
         if(burn_token) {
-            burn_ram_token(fee.quantity);
+            burn_ram_token(buy_ram_amount.quantity);
         }
 
         constexpr static auto k_open = "open"_n;
-        dispatch_inline(fee.contract, k_open, {{ _self, k_active }},
+        dispatch_inline(buy_ram_amount.contract, k_open, {{ _self, k_active }},
             std::make_tuple(owner, sym, _self)
         );
+    }
+    else if(sym == EOS_SYMBOL && !transfer_proxy())
+    {
+        /* We buy ram needed for the transfer, if transfer proxy is not available. */
+        // Note: when open action is supported by eosio.token add call to open action.
+        ram_market rm;
+        rm.buyram(_self, _self, buy_ram_amount.quantity);
     }
 }
 

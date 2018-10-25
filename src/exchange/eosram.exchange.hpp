@@ -1,4 +1,3 @@
-
 #include <eosiolib/asset.hpp>
 #include <eosiolib/eosio.hpp>
 #include <eosiolib/transaction.hpp>
@@ -90,7 +89,7 @@ namespace eosram {
         template<typename Lambda>
         void deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
         void make_transfer(const name recipient, const asset& amount, std::string memo);
-        void open_token_balance(name owner, const extended_asset& fee, const bool burn_token);
+        void open_token_balance(name owner, const extended_asset& buy_ram_amount, const bool burn_token);
         void transfer_token(const name from, const name to, const extended_asset& amount, std::string memo = "", bool deferred = false);
 
         void handle_expired_order(ds::order_book& book, ds::order_t order, std::string reason);
