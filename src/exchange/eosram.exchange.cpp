@@ -220,12 +220,12 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
 
     const auto price =rm.get_ramprice();
     deduct_fee_and_transfer(o1.trader, o1_receive_amount, trade_fee,
-        gen_trade_memo(o2_receive_amount, o1_receive_amount, price),
+        gen_trade_memo(o2_receive_amount, price),
         "Trade fee"
     );
 
     deduct_fee_and_transfer(o2.trader, o2_receive_amount, trade_fee,
-        gen_trade_memo(o1_receive_amount, o2_receive_amount, price),
+        gen_trade_memo(o1_receive_amount, price),
         "Trade fee"
     );
 
@@ -482,7 +482,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             
             // Transfer converted funds to trader
             deduct_fee_and_transfer(order.trader, out_ram_quantity, issue_token_fee,
-                gen_trade_memo(order.value, out_ram_quantity, price),
+                gen_trade_memo(order.value, price),
                 "RAM token issuance fee"
             );
         }

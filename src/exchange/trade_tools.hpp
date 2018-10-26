@@ -61,12 +61,12 @@ namespace eosram {
         eosio_assert(is_min_trade_amount(value), msg);
     }
 
-    static std::string gen_trade_memo(const asset& sold_amnt, const asset& receive_amnt, asset price) 
+    static std::string gen_trade_memo(const asset& sold_amnt, asset price) 
     {
+        using namespace std::string_literals;
         const bool is_buy = sold_amnt.symbol == EOS_SYMBOL;
-        return ( is_buy ? "Bought " : "Sold ") 
-            + (is_buy ? to_string(receive_amnt) : to_string(sold_amnt)) 
-            + " tokens @" + to_string(price) + "/KiB";
+        return ( is_buy ? "Bought"s : "Sold"s) 
+            + " RAM tokens @"s + to_string(price) + "/KiB"s;
     }
 
     static asset min_asset(const asset& a1, const asset& a2)
