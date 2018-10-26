@@ -9,6 +9,7 @@
 
 #include "ds/exchange_state.hpp"
 #include "ds/memo/memo.hpp"
+#include "ds/pending_trfx_queue.hpp"
 
 
 using namespace eosio;
@@ -492,21 +493,16 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
         {
             LOG_DEBUG("Selling RAM token to system contract");
 
-            // Calculate output RAM - market fee
-            auto out_eos_quantity = deduct_fee(
-                rm.convert_to_eos(order.value), ram_market_fee
-            ).value;
-            
             // Buy RAM from rammarket and transfer token;
             rm.sellrambytes(get_self(), order.value.amount);
 
             // Reduce issued RAM token supply
             burn_ram_token(order.value);
-            
-            // Transfer converted funds to trader
-            deduct_fee_and_transfer(order.trader, out_eos_quantity, burn_token_fee,
-                gen_trade_memo(order.value, out_eos_quantity, price),
-                "Burn RAM token fee"
+
+            pending_trfx_queue_t pending_trfx_reips(_self);
+            pending_trfx_reips.push(order.trader,
+                gen_trade_memo(order.value, price), 
+                order.trader
             );
         }
     }
@@ -568,11 +564,28 @@ void exchange::on_notification(name receiver, name code, name action)
 
 void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 {
-    if (from != EOSIO_RAM_CONTRACT && from != fee_recipient() && to == _self)
+    if(from != EOSIO_RAM_CONTRACT && from != fee_recipient() && to == _self)
     {
         eosio_assert(quantity.is_valid(), "Invalid quantity in transfer" );
         eosio_assert(quantity.amount > 0, "Transferred quantity must be positive value");
         on_payment_received(from, std::move(quantity), std::move(memo));
+    }
+    else if(from == EOSIO_RAM_CONTRACT && quantity.symbol == EOS_SYMBOL)
+    {
+        pending_trfx_queue_t pending_trfx_reips(_self);
+        auto recipient = pending_trfx_reips.pop();
+        if(recipient)
+        {
+            auto out_eos_quantity = deduct_fee(quantity,
+                ram_market_fee
+            ).value;
+
+            deduct_fee_and_transfer(recipient->name, out_eos_quantity, burn_token_fee,
+                recipient->trfx_memo,
+                "Burn RAM token fee",
+                /*deferred=*/true
+            );
+        }
     }
 }
 
