@@ -635,14 +635,27 @@ void exchange::on_error(onerror error)
 {
     timer_id tid(error.sender_id);
     auto book_ptr = get_order_book_ptr_of(tid.order_id());
-    if(book_ptr != nullptr || tid.action_name() == k_clrorders)
+    if(book_ptr != nullptr || 
+       tid.action_name() == k_clrorders ||
+       tid.action_name() == k_deferredtrfx)
     {
-        LOG_DEBUG("Resending failed tx for order_id: %", tid.order_id());
+        LOG_DEBUG("Resending failed tx for order_id: %", get_txid());
 
-        auto order = *book_ptr->find(tid.order_id());
+        auto dftx_payer = _self;
+        if(book_ptr != nullptr) {
+            dftx_payer= book_ptr->find(tid.order_id())->trader;
+        } 
+        else if(tid.action_name() == k_deferredtrfx) {
+            dftx_payer= name(tid.order_id());
+        }
+
+        if(!has_auth(dftx_payer)) {
+            dftx_payer = _self;
+        }
+
         transaction tx = error.unpack_sent_trx();
         tx.delay_sec = onerror_resend_delay;
-        tx.send(error.sender_id, order.trader, true);
+        tx.send(error.sender_id, dftx_payer, true);
     }
 }
 
