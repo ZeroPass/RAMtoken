@@ -9,3 +9,6 @@ DEFINITION. RAM token is an open-source smart contract. The issued token is pegg
 AMENDMENT. The contract might be modified or amended with bug fixes or new features. The RAM token transfers can be frozen during the time of fixing the bugs, restoring the peg or during the maintenance and upgrade.
 In no way would the contract's owner account be used to access or modify users balance that were not a result of a bug or contract's unexpected behaviour.
 If that still happens, the arbitration forum or block-producers should restore the contract's previous state within their ability.
+
+### CLAUSE NAME: Maintainer contract code repository
+CODE REPOSITORY. https://github.com/ChainRift/RAMtoken/

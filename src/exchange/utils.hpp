@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "constants.hpp"
+#include "order_timer.hpp"
 #include "types.hpp"
 
 
@@ -19,6 +20,14 @@ namespace eosram {
     using eosio::asset;
     using eosio::extended_asset;
     using eosio::symbol;
+
+    static constexpr auto k_deferredtrfx = "deferredtrfx"_n;
+
+    namespace detail {
+        inline std::string gen_proxy_memo(eosio::name recipient, std::string&& memo) {
+            return recipient.to_string() + " " + std::move(memo);
+        }
+    }
 
     static void asset_assert(const asset& asset, const symbol& sym,  const char* msg)
     {
@@ -36,13 +45,17 @@ namespace eosram {
 
     static eosio::action make_transfer_action(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
     {
+        using namespace detail;
+
         eosio::action ta;
-        ta.account = proxy ? proxy : amount.contract;
+        ta.account = amount.contract;
         ta.name = "transfer"_n;
         ta.authorization.emplace_back(from, k_active);
         ta.data = [&]{
-            if(proxy) {
-                return pack(std::make_tuple(from, to, std::move(amount), std::move(memo)));
+            if(proxy) 
+            {
+                memo = gen_proxy_memo(to, std::move(memo));
+                to = proxy;
             }
             return pack(std::make_tuple(from, to, std::move(amount.quantity), std::move(memo)));
         }();
@@ -50,7 +63,7 @@ namespace eosram {
         return ta;
     }
 
-    static void deferred_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
+    static void deferred_transfer(eosio::name ram_payer, eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)
     {
         eosio::action ta = make_transfer_action(
             proxy, perm, from, to, amount, memo
@@ -59,8 +72,8 @@ namespace eosram {
         eosio::transaction tx;
         tx.actions.push_back(std::move(ta));
 
-        uint128_t sender_id = (static_cast<uint128_t>(from.value) << 64) | to.value;
-        tx.send(sender_id, from, true);
+        uint128_t sender_id = timer_id(ram_payer.value, k_deferredtrfx);
+        tx.send(sender_id, ram_payer, true);
     }
 
     inline void inline_transfer(eosio::name proxy, eosio::permission_level perm, eosio::name from, eosio::name to, extended_asset amount, std::string memo)

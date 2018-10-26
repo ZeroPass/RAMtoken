@@ -11,6 +11,7 @@
 namespace eosram {
     namespace detail {
         static constexpr uint32_t inf_time_ = 0UL;
+        static constexpr uint32_t ote_time_ = 1UL;
     }
 
     /* Returns order id from transaction id */
@@ -27,8 +28,8 @@ namespace eosram {
         return ttl == 0;
     }
 
-    inline bool is_ote_order(uint32_t expiration_time) {
-        return expiration_time == now();
+    inline bool is_ote_order(const ds::order_t& o) {
+        return o.expiration_time == detail::ote_time_;
     }
 
     inline constexpr bool ttl_infinite(ttl_t ttl) {
@@ -63,7 +64,8 @@ namespace eosram {
     static uint32_t get_order_expiration_time(ttl_t ttl) 
     {   
         eosio_assert(ttl_valid(ttl), "Invlid ttl!");
-        return ttl_infinite(ttl) ? detail::inf_time_ : now() + ttl;
+        return ttl_infinite(ttl) ? detail::inf_time_ : 
+               is_ote_order(ttl) ? detail::ote_time_ : now() + ttl;
     }
 
     static bool is_buy_order(const ds::order_t& order) {
