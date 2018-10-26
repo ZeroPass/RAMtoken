@@ -245,6 +245,9 @@
     },{
       "id": "Amendment",
       "body": "AMENDMENT. The contract might be modified or amended with bug fixes or new features. RAM exchange and RAM token transfers might be frozen during the time of fixing the bugs, restoring the peg or during the maintenance and upgrade.\nIn no way would the contract's owner account be used to access or modify users balance that were not a result of a bug or contract's unexpected behaviour.\nIf that still happens, the arbitration forum or block-producers should restore the contract's previous state within their ability."
+    },{
+      "id": "Code Repository",
+      "body": "CODE REPOSITORY. The contract might be modified or amended with bug fixes or new features. RAM exchange and RAM token transfers might be frozen during the time of fixing the bugs, restoring the peg or during the maintenance and upgrade.\nIn no way would the contract's owner account be used to access or modify users balance that were not a result of a bug or contract's unexpected behaviour.\nIf that still happens, the arbitration forum or block-producers should restore the contract's previous state within their ability."
     }
   ],
   "error_messages": [],
