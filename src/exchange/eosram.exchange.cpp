@@ -22,9 +22,10 @@ constexpr auto k_execute_order  = "exec.order"_n;
 constexpr auto k_insorderexec   = "insorderexec"_n;
 constexpr auto k_order_expired  = "order.expired"_n;
 
+
 void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, name actor, std::string reason)
 {
-    if(!ttl_infinite(ttl))
+    if(!ttl_infinite(ttl) && !is_ote_order(ttl))
     {
         order_timer t(order_id);
         t.set_permission(actor, k_active);
@@ -168,8 +169,7 @@ void exchange::execute_order(order_id_t order_id)
         return bbook_;
     }();
 
-    const bool is_ote = is_ote_order(buy_order.expiration_time);
-    if(preflight_check(buy_book, std::move(buy_order), is_ote)) {
+    if(preflight_check(buy_book, std::move(buy_order))) {
         execute_trade_loop(buy_order, sell_book);
     }
 
@@ -178,11 +178,6 @@ void exchange::execute_order(order_id_t order_id)
         if(erase_order_or_update(buy_book, buy_order)) {
             stop_ttl_timer(buy_order.id); // Order was deleted, stop it's ttl timer
         }
-        else if(is_ote) 
-        {
-            stop_ttl_timer(buy_order.id);
-            handle_expired_order(buy_book, std::move(buy_order), ""s);
-        }
         // Execute another order loop?
         else if(sell_book.top() != sell_book.end())
         {
@@ -190,6 +185,9 @@ void exchange::execute_order(order_id_t order_id)
             t.set_permission(buy_order.trader, k_active);
             t.set_callback(get_self(), k_execute_order, buy_order.id);
             t.start(order_execution_delay, buy_order.trader);
+        }
+        else if(is_ote_order(buy_order)) {
+            handle_expired_order(buy_book, std::move(buy_order), ""s);
         }
     }
 }
@@ -247,7 +245,7 @@ void exchange::execute_trade_loop(ds::order_t& buy_order, ds::order_book& sell_b
         auto sell_order = *sell_order_it;
         ++sell_order_it;
 
-        if(preflight_check(sell_book, std::move(sell_order), false))
+        if(preflight_check(sell_book, std::move(sell_order)))
         {
             execute_trade(buy_order, sell_order);
             if(erase_order_or_update(sell_book, sell_order)) {
@@ -257,9 +255,9 @@ void exchange::execute_trade_loop(ds::order_t& buy_order, ds::order_book& sell_b
     }
 }
 
-bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order, bool ote_order)
+bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
 {
-    if(!ote_order && has_order_expired(order)) 
+    if(!is_ote_order(order) && has_order_expired(order)) 
     {
         stop_ttl_timer(order.id);
         handle_expired_order(book, std::move(order), "Order has expired"s);

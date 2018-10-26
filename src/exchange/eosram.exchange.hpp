@@ -84,7 +84,7 @@ namespace eosram {
         void make_buy_order(order_id_t order_id, name buyer, const asset& value, ttl_t ttl, bool force_buy);
         void make_sell_order(order_id_t order_id, name seller, const asset& value, ttl_t ttl, bool force_sell);
         void make_order_and_execute(ds::order_book&, order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool convert_on_expire);
-        bool preflight_check(ds::order_book& book, ds::order_t&& order, bool ote_order);
+        bool preflight_check(ds::order_book& book, ds::order_t&& order);
 
         template<typename Lambda>
         void deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info);
