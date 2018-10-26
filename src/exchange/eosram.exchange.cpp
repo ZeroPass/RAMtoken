@@ -303,16 +303,16 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
 }
 
 template<typename Lambda>
-void exchange::deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info)
+void exchange::deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info, bool deferred)
 {
     auto da = deduct_fee(amount, std::forward<Lambda>(fee));
     if(da.fee.amount > 0){
-        transfer_token(get_self(), fee_recipient(), to_token(da.fee), std::move(fee_info));
+        transfer_token(get_self(), fee_recipient(), to_token(da.fee), std::move(fee_info), deferred);
     }
-    make_transfer(recipient, da.value, std::move(transfer_memo));
+    make_transfer(recipient, da.value, std::move(transfer_memo), deferred);
 }
 
-void exchange::make_transfer(name recipient, const asset& amount, std::string memo)
+void exchange::make_transfer(name recipient, const asset& amount, std::string memo, bool deferred)
 {
     // Token transfer fee applys only if recipient is not already
     // an owner of token he's about to receive.
@@ -329,12 +329,12 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
         { 
             // We consume transferred amount as fee since it's not enough
             // to open a token balance account for the recipient.
-            transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee");
+            transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee", deferred);
         }
     }
 
     if(ext_amount.quantity.amount > 0) {
-        transfer_token(get_self(), recipient, ext_amount, std::move(memo));
+        transfer_token(get_self(), recipient, ext_amount, std::move(memo), deferred);
     }
 }
 
@@ -373,7 +373,8 @@ void exchange::transfer_token(const name from, const name to, const extended_ass
     
     if(deferred)
     {
-        deferred_transfer(proxy, { from, k_active },
+        deferred_transfer(/*ram_payer=*/has_auth(to) ? to : from, 
+            proxy, { from, k_active },
             from, to, amount, std::move(memo)
         );
     }
