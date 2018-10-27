@@ -28,19 +28,23 @@ Or:
 
 ## Accounts
 
-#### Mainet
+#### Mainet 
+**[ramtoken.io](https://ramtoken.io/)**  
+  
 Exchange: [ramtokendapp](https://bloks.io/account/ramtokendapp)  
 Token: [ramtokenmoon](https://bloks.io/account/ramtokenmoon)  
 Exchange fee: [ramtokenfees](https://bloks.io/account/ramtokenfees)  
 Transfer proxy: [proxytransax](https://bloks.io/account/proxytransax) 
 
-#### CryptoKylin testnet:
+#### CryptoKylin Testnet   
+**[kylin.ramtoken.io](https://kylin.ramtoken.io/)**  
+  
 Exchange: [eramexchange](https://kylin.bloks.io/account/eramexchange)  
 Token: [ramramramtkn](https://kylin.bloks.io/account/ramramramtkn)  
 Exchange fee: [ramxchangfee](https://kylin.bloks.io/account/ramxchangfee)  
 Transfer proxy: [proxytransax](https://kylin.bloks.io/account/proxytransax)  
 
-#### Jungle testnet:
+#### Jungle Testnet
 Exchange: [turbotest123](https://jungle.bloks.io/account/turbotest123)    
 Token: [ram.token](https://jungle.bloks.io/account/ram.token)  
 Exchange fee: [ramxchangfee](https://jungle.bloks.io/account/ramxchangfee)  
