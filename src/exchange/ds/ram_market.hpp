@@ -58,7 +58,6 @@ namespace eosram::ds {
         asset convert_to_eos(asset from_ram) const
         {
             auto tmp = get_state();
-            using namespace eosiosystem;
             return tmp.convert(from_ram, EOS_SYMBOL);
         }
 
