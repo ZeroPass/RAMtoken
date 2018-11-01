@@ -1,4 +1,6 @@
 # EOS RAMtoken
+RAM token is fully backed by EOS system RAM bytes.
+
 ## Contract Actions
   
 You can either use:

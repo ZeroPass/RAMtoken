@@ -7,28 +7,6 @@
 namespace eosram::ds {
     using eosio::asset;
 
-    /* Struct defines kibibyte unit */
-    struct kibyte
-    {
-        constexpr explicit kibyte(uint64_t v) : value(v)
-        {
-            eosio_assert(v <= UINT32_MAX / 1024UL, "kibyte: Too big value for KiB unit!");
-        }
-
-        uint32_t value = 0;
-        uint32_t to_bytes() const
-        {
-            return value * 1024UL;
-        }
-    };
-
-    // kibyte literal
-    constexpr kibyte operator"" _KiB (unsigned long long value)
-    {
-        return kibyte(value);
-    }
-
-
     class ram_market
     {
     public:
@@ -58,7 +36,6 @@ namespace eosram::ds {
         asset convert_to_eos(asset from_ram) const
         {
             auto tmp = get_state();
-            using namespace eosiosystem;
             return tmp.convert(from_ram, EOS_SYMBOL);
         }
 
@@ -82,11 +59,6 @@ namespace eosram::ds {
             eosio::dispatch_inline(k_eosio, k_buyrambytes, {{buyer, k_active }}, 
                 std::make_tuple(buyer, receiver, bytes)
             );
-        }
-
-        static void sellram(eosio::name seller, kibyte quantity)
-        {
-            sellrambytes(seller, quantity.to_bytes());
         }
 
         static void sellrambytes(eosio::name seller, uint32_t bytes)
