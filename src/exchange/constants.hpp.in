@@ -11,9 +11,15 @@
 
 namespace eosram {
     static constexpr auto EOS_SYMBOL = eosio::symbol("EOS", 4);
-    static constexpr auto EOS_TOKEN_CONTRACT = "eosio.token"_n;
-    static constexpr auto EOSIO_RAM_CONTRACT = "eosio.ram"_n;
-    static constexpr auto RAM_TOKEN_CONTRACT = "@RAM_TOKEN_CONTRACT@"_n;
+    static constexpr auto EOS_TOKEN_CONTRACT   = "eosio.token"_n;
+    static constexpr auto EOSIO_RAM_ACCOUNT    = "eosio.ram"_n;
+    static constexpr auto EOSIO_RAMFEE_ACCOUNT = "eosio.ramfee"_n;
+    static constexpr auto EOSIO_STAKE_ACCOUNT  = "eosio.stake"_n;
+    static constexpr auto EOSIO_BPAY_ACCOUNT   = "eosio.bpay"_n;
+    static constexpr auto EOSIO_VPAY_ACCOUNT   = "eosio.vpay"_n;
+    static constexpr auto EOSIO_NAMES_ACCOUNT  = "eosio.names"_n;
+    static constexpr auto EOSIO_SAVING_ACCOUNT = "eosio.saving"_n;
+    static constexpr auto RAM_TOKEN_CONTRACT   = "@RAM_TOKEN_CONTRACT@"_n;
 
     static constexpr auto k_active = "active"_n;
     static constexpr auto k_eosio  = "eosio"_n;
@@ -31,7 +37,7 @@ namespace eosram {
         return eosio::extended_symbol{EOS_SYMBOL, EOS_TOKEN_CONTRACT};
     }
 
-    static eosio::extended_asset eos_token(eosio::asset asset) 
+    static eosio::extended_asset eos_token(eosio::asset asset)
     {
         eosio_assert(asset.symbol == EOS_SYMBOL, "Invalid EOS asset!");
         return eosio::extended_asset(asset, EOS_TOKEN_CONTRACT);
@@ -45,7 +51,7 @@ namespace eosram {
         return eosio::extended_symbol{RAM_SYMBOL, RAM_TOKEN_CONTRACT};
     }
 
-    static eosio::extended_asset ram_token(eosio::asset asset) 
+    static eosio::extended_asset ram_token(eosio::asset asset)
     {
         eosio_assert(asset.symbol == RAM_SYMBOL, "Invalid RAM asset!");
         return eosio::extended_asset(asset, RAM_TOKEN_CONTRACT);
@@ -55,7 +61,7 @@ namespace eosram {
         return ram_token(eosio::asset(amount, RAM_SYMBOL));
     }
 
-    static eosio::extended_asset to_token(eosio::asset asset) 
+    static eosio::extended_asset to_token(eosio::asset asset)
     {
         if(asset.symbol == EOS_SYMBOL) {
             return eos_token(asset);
@@ -70,5 +76,22 @@ namespace eosram {
 
     static auto operator"" _RAM (unsigned long long value) {
         return ram_token(static_cast<int64_t>(value));
+    }
+
+    inline constexpr bool is_system_account(eosio::name account)
+    {
+        switch(account.value)
+        {
+            case EOSIO_RAM_ACCOUNT.value:
+            case EOSIO_RAMFEE_ACCOUNT.value:
+            case EOSIO_STAKE_ACCOUNT.value:
+            case EOSIO_BPAY_ACCOUNT.value:
+            case EOSIO_VPAY_ACCOUNT.value:
+            case EOSIO_NAMES_ACCOUNT.value:
+            case EOSIO_SAVING_ACCOUNT.value: {
+                return true;
+            }
+        };
+        return false;
     }
 }
