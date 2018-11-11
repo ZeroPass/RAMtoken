@@ -97,7 +97,7 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
     eosio_assert(buyer != _self, "Contract account cannot buy!");
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
     eosio_assert(!is_ote_order(ttl) || force_buy, "OTE order shoud have force_buy = True!");
-    
+
     // Verifying asset (must be valid EOS token)
     asset_assert(quantity, EOS_SYMBOL, "The value must be in EOS.");
     eosio_assert(quantity.amount > 0 , "EOS quaninty must be positive.");
@@ -239,8 +239,8 @@ void exchange::execute_trade_loop(ds::order_t& buy_order, ds::order_book& sell_b
     auto sell_order_it = sell_book.top();
     uint32_t limit = order_execution_limit;
 
-    while(limit --> 0 && 
-        buy_order.value.amount > 0 && 
+    while(limit --> 0 &&
+        buy_order.value.amount > 0 &&
         sell_order_it != sell_book.end())
     {
         auto sell_order = *sell_order_it;
@@ -258,7 +258,7 @@ void exchange::execute_trade_loop(ds::order_t& buy_order, ds::order_book& sell_b
 
 bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
 {
-    if(!is_ote_order(order) && has_order_expired(order)) 
+    if(!is_ote_order(order) && has_order_expired(order))
     {
         stop_ttl_timer(order.id);
         handle_expired_order(book, std::move(order), "Order has expired"s);
@@ -266,14 +266,14 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
     }
 
    /**
-    * We check here if order is trading EOS token for RAM token and if recipient of RAM token (the owner of order) 
-    * has already opened balance account on RAM token contract. If not, we deduce EOS token from the total 
+    * We check here if order is trading EOS token for RAM token and if recipient of RAM token (the owner of order)
+    * has already opened balance account on RAM token contract. If not, we deduce EOS token from the total
     * amount of order value, buy ram bytes for the exchange and open balance account for the recipient
     * paied by exchange.
     *
     * We don't do this check for EOS token since eosio.token contract does not support open token action.
     * We then assume here, that make_transfer function will deduce appropriate amount of transfer fee
-    * from the traded amount after the trade has been executed. Also proxy or make_transfer 
+    * from the traded amount after the trade has been executed. Also proxy or make_transfer
     * function should reserve/buy accurate amount of ram for the transfer of EOS token.
     * This is charged to this exchange account and paied by deduced fee.
     */
@@ -282,7 +282,7 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
     {
         auto da = deduct_fee(order.value, token_transfer_fee);
 
-        /* 
+        /*
         * If deduced amount is less then 1, the make_transfer function should
         * consume traded RAM tokens as transfer fee.
         */
@@ -322,12 +322,12 @@ void exchange::make_transfer(name recipient, const asset& amount, std::string me
     {
         auto da = deduct_fee(ext_amount.quantity, token_transfer_fee);
         ext_amount.quantity.amount = da.value.amount;
-        
+
         if(da.value.amount > 0) {
             open_token_balance(recipient, to_token(da.fee), true);
         }
-        else 
-        { 
+        else
+        {
             // We consume transferred amount as fee since it's not enough
             // to open a token balance account for the recipient.
             transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee", deferred);
@@ -371,15 +371,15 @@ void exchange::transfer_token(const name from, const name to, const extended_ass
         }
         return name();
     }();
-    
+
     if(deferred)
     {
-        deferred_transfer(/*ram_payer=*/has_auth(to) ? to : from, 
+        deferred_transfer(/*ram_payer=*/has_auth(to) ? to : from,
             proxy, { from, k_active },
             from, to, amount, std::move(memo)
         );
     }
-    else 
+    else
     {
         inline_transfer(proxy, { from, k_active },
             from, to, amount, std::move(memo)
@@ -446,7 +446,7 @@ void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id,
 // Cancel order
 void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, name account, const asset& value)
 {
-    // Tranfer any value back to sender 
+    // Tranfer any value back to sender
     if(value.amount > 0) {
         make_transfer(account, value, "Returning excess amount"s);
     }
@@ -457,7 +457,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
 {
     eosio_assert(has_order_expired(order), "handle_expired_order: Order has not expired!");
     LOG_DEBUG("Order expired id= %", order.id);
-    
+
     book.erase(order);
 
     // Buy/Sell RAM token on system ram market
@@ -480,7 +480,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
 
             // Issue RAM token
             issue_ram_token(out_ram_quantity);
-            
+
             // Transfer converted funds to trader
             deduct_fee_and_transfer(order.trader, out_ram_quantity, issue_token_fee,
                 gen_trade_memo(order.value, price),
@@ -489,7 +489,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
         }
 
         // Sell RAM on ram market, burn RAM token and transfer EOS to user
-        else 
+        else
         {
             LOG_DEBUG("Selling RAM token to system contract");
 
@@ -501,7 +501,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
 
             pending_trfx_queue_t pending_trfx_reips(_self);
             pending_trfx_reips.push(order.trader,
-                gen_trade_memo(order.value, price), 
+                gen_trade_memo(order.value, price),
                 order.trader
             );
         }
@@ -510,8 +510,6 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
     else if(!order.convert_on_expire)
     {
         LOG_DEBUG("Returning remaining order's funds back to order issuer");
-       // require_recipient(order.trader); // Critical Bug: https://github.com/EOSIO/eos/issues/4824 
-
         make_transfer(order.trader, order.value, std::move(reason));
     }
 }
@@ -564,13 +562,13 @@ void exchange::on_notification(name receiver, name code, name action)
 
 void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 {
-    if(from != EOSIO_RAM_CONTRACT && from != fee_recipient() && to == _self)
+    if(!is_system_account(from) && from != fee_recipient() && to == _self)
     {
         eosio_assert(quantity.is_valid(), "Invalid quantity in transfer" );
         eosio_assert(quantity.amount > 0, "Transferred quantity must be positive value");
         on_payment_received(from, std::move(quantity), std::move(memo));
     }
-    else if(from == EOSIO_RAM_CONTRACT && quantity.symbol == EOS_SYMBOL)
+    else if(from == EOSIO_RAM_ACCOUNT && quantity.symbol == EOS_SYMBOL)
     {
         pending_trfx_queue_t pending_trfx_reips(_self);
         auto recipient = pending_trfx_reips.pop();
@@ -611,7 +609,7 @@ void exchange::on_payment_received(name from, asset quantity, std::string memo)
             auto cmd = parser.get<memo_cmd_make_order>();
             return execute_memo_cmd(cmd, from, quantity);
         }
-        case memo_cmd_cancel_order::type_as_int(): 
+        case memo_cmd_cancel_order::type_as_int():
         {
             LOG_DEBUG("Executing cmd: cancel_order");
             auto cmd = parser.get<memo_cmd_cancel_order>();
@@ -635,7 +633,7 @@ void exchange::on_error(onerror error)
 {
     timer_id tid(error.sender_id);
     auto book_ptr = get_order_book_ptr_of(tid.order_id());
-    if(book_ptr != nullptr || 
+    if(book_ptr != nullptr ||
        tid.action_name() == k_clrorders ||
        tid.action_name() == k_deferredtrfx)
     {
@@ -644,7 +642,7 @@ void exchange::on_error(onerror error)
         auto dftx_payer = _self;
         if(book_ptr != nullptr) {
             dftx_payer= book_ptr->find(tid.order_id())->trader;
-        } 
+        }
         else if(tid.action_name() == k_deferredtrfx) {
             dftx_payer= name(tid.order_id());
         }
@@ -746,7 +744,7 @@ void exchange::clrorders(const symbol& sym, std::string reason)
         it = book.erase(it);
     }
 
-    if(!book.empty()) 
+    if(!book.empty())
     {
         auto sym_code = static_cast<order_id_t>(sym.raw());
         order_timer t(sym_code);
@@ -767,5 +765,5 @@ void exchange::require_running() const
     eosio_assert(is_running(), "RAM token exchange is stopped!");
 }
 
-EOSIO_DISPATCH( eosram::exchange, 
+EOSIO_DISPATCH( eosram::exchange,
     (init)(buy)(sell)(cancel)(cancelbytxid)(start)(stop)(setfeerecip)(setproxy)(clrallorders)(clrorders) )
