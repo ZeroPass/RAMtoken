@@ -44,27 +44,27 @@ namespace eosram {
     * Returns true if order has expired, otherwise false.
     * Order expires it's expiration time if greater than 0 and current time
     * is higher or equal than order expiration time.
-    * 
+    *
     * @param order expiration time
     * @returns true/false
     */
-    static bool has_order_expired(const ds::order_t& order) 
-    {   
+    static bool has_order_expired(const ds::order_t& order)
+    {
         const auto exp_time = order.expiration_time;
         return exp_time != detail::inf_time_ && now() >= exp_time;
     }
 
-   /** 
+   /**
     * Returns expiration time of a trade order based on current time and TTL.
     * If ttl is infinite than experation time is 0.
-    * 
+    *
     * @param ttl
     * @returns expiration time
     */
-    static uint32_t get_order_expiration_time(ttl_t ttl) 
-    {   
+    static uint32_t get_order_expiration_time(ttl_t ttl)
+    {
         eosio_assert(ttl_valid(ttl), "Invlid ttl!");
-        return ttl_infinite(ttl) ? detail::inf_time_ : 
+        return ttl_infinite(ttl) ? detail::inf_time_ :
                is_ote_order(ttl) ? detail::ote_time_ : now() + ttl;
     }
 
@@ -76,17 +76,17 @@ namespace eosram {
         return order.value.symbol == RAM_SYMBOL;
     }
 
-    /** 
-    * Updates order in book if the value of order is > 0, 
+    /**
+    * Updates order in book if the value of order is > 0,
     * otherwise order is removed from book.
-    * 
+    *
     * @param reference to order_book
     * @param const reference to order
     * @returns True if order was removed, else False.
     */
     static bool erase_order_or_update(ds::order_book& book, const ds::order_t& order)
     {
-        if(order.value.amount > 0LL) 
+        if(order.value.amount > 0LL)
         {
             book.modify(order, order.trader);
             return false;
