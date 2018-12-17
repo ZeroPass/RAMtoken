@@ -31,15 +31,15 @@ namespace eosram {
 
     static void asset_assert(const asset& asset, const symbol& sym,  const char* msg)
     {
-        eosio_assert(asset.symbol.is_valid() , "Invalid symbol name" );
-        eosio_assert(asset.symbol == sym     , msg                   );
-        eosio_assert(asset.is_valid()        , "Invalid quantity."   );
+        eosio_assert(asset.symbol.is_valid() , "Invalid symbol name");
+        eosio_assert(asset.symbol == sym     , msg                  );
+        eosio_assert(asset.is_valid()        , "Invalid quantity."  );
     }
 
     static void asset_assert(const asset& asset, const symbol& sym1, const symbol& sym2,  const char* msg)
     {
         eosio_assert(asset.symbol.is_valid() , "Invalid symbol name");
-        eosio_assert(asset.symbol == sym1  || asset.symbol == sym2 , msg);
+        eosio_assert(asset.symbol == sym1  || asset.symbol == sym2, msg);
         eosio_assert(asset.is_valid()        , "Invalid quantity.");
     }
 
@@ -68,7 +68,7 @@ namespace eosram {
         eosio::action ta = make_transfer_action(
             proxy, perm, from, to, amount, memo
         );
-    
+
         eosio::transaction tx;
         tx.actions.push_back(std::move(ta));
 
@@ -85,7 +85,7 @@ namespace eosram {
     }
 
     /* Returns current transaction id */
-    static tx_id_t get_txid() 
+    static tx_id_t get_txid()
     {
         auto size = transaction_size();
         char raw_tx[size];
@@ -95,7 +95,7 @@ namespace eosram {
         tx_id_t txid;
         sha256(raw_tx, size, &txid);
         return txid;
-    } 
+    }
 
     // Converts char to byte (code ref taken from eosio/fc)
     static uint8_t from_hex(char c)
@@ -177,11 +177,11 @@ namespace eosram {
         {
             neg = num == INT_MIN ? 0x2 : 0x1;
             num = -num - (neg & 0x2 ? 1 : 0); // sub 1 if num is INT_MIN
-        } 
+        }
 
         std::string str(num_digits(num) + (neg ? 1 : 0), '0');
         auto it = str.rbegin();
-        do 
+        do
         {
             *it = '0' + num % 10;
             ++it;
@@ -196,7 +196,7 @@ namespace eosram {
     * Converts string to nubmer.
     * First charecter in string has to be digit or +/- sign
     * otherwise function returns 0 and sets end_pos arg to 0.
-    * 
+    *
     * @param string to convert to number.
     * @param pointer to the size_t variable which will be set to the offset of character following the number.
     *        If function sets this parameter to 0 it means no number was found at the begining of the string.
@@ -205,7 +205,7 @@ namespace eosram {
     */
     static int32_t to_number(std::string_view str, std::size_t* end_pos = nullptr)
     {
-        if(str.empty()) 
+        if(str.empty())
         {
             if(end_pos) *end_pos = 0;
             return 0L;
@@ -213,7 +213,7 @@ namespace eosram {
 
         std::size_t pos = 0;
         uint64_t n = 0ULL, neg = 0ULL;
-        switch (str.at(pos)) 
+        switch (str.at(pos))
         {
             case '-': neg = -1;
             case '+': pos++;
@@ -247,7 +247,7 @@ namespace eosram {
         auto sym_code = sym.code().raw();
         char str_sym[7] = {0};
         std::size_t len = 0;
-        for( ; len < 7; ++len ) 
+        for( ; len < 7; ++len )
         {
             char c = (char)(sym_code & 0xff);
             if( !c ) break;
