@@ -644,7 +644,7 @@ void exchange::on_error(onerror error)
        tid.action_name() == k_clrorders ||
        tid.action_name() == k_deferredtrfx)
     {
-        LOG_DEBUG("Resending failed tx for order_id: %", get_txid());
+        LOG_DEBUG("Resending failed tx for order_id: %", tid.order_id());
 
         auto dftx_payer = _self;
         if(book_ptr != nullptr) {
