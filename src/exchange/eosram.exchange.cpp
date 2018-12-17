@@ -220,12 +220,12 @@ void exchange::execute_trade(ds::order_t& o1, ds::order_t& o2)
     LOG_DEBUG("o2_receive_amount:%", o2_receive_amount);
 
     const auto price =rm.get_ramprice();
-    deduct_fee_and_transfer(o1.trader, o1_receive_amount, trade_fee,
+    deduct_fee_and_transfer_to(o1.trader, o1_receive_amount, trade_fee,
         gen_trade_memo(o2_receive_amount, price),
         "Trade fee"
     );
 
-    deduct_fee_and_transfer(o2.trader, o2_receive_amount, trade_fee,
+    deduct_fee_and_transfer_to(o2.trader, o2_receive_amount, trade_fee,
         gen_trade_memo(o1_receive_amount, price),
         "Trade fee"
     );
@@ -304,11 +304,11 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
 }
 
 template<typename Lambda>
-void exchange::deduct_fee_and_transfer(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info, bool deferred)
+void exchange::deduct_fee_and_transfer_to(name recipient, const asset& amount, Lambda&& fee, std::string transfer_memo, std::string fee_info, bool deferred)
 {
     auto da = deduct_fee(amount, std::forward<Lambda>(fee));
     if(da.fee.amount > 0){
-        transfer_token(get_self(), fee_recipient(), to_token(da.fee), std::move(fee_info), deferred);
+        transfer_token(_self, fee_recipient(), to_token(da.fee), std::move(fee_info), deferred);
     }
     make_transfer(recipient, da.value, std::move(transfer_memo), deferred);
 }
@@ -482,7 +482,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             issue_ram_token(out_ram_quantity);
 
             // Transfer converted funds to trader
-            deduct_fee_and_transfer(order.trader, out_ram_quantity, issue_token_fee,
+            deduct_fee_and_transfer_to(order.trader, out_ram_quantity, issue_token_fee,
                 gen_trade_memo(order.value, price),
                 "RAM token issuance fee"
             );
@@ -578,7 +578,7 @@ void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
                 ram_market_fee
             ).value;
 
-            deduct_fee_and_transfer(recipient->name, out_eos_quantity, burn_token_fee,
+            deduct_fee_and_transfer_to(recipient->name, out_eos_quantity, burn_token_fee,
                 recipient->trfx_memo,
                 "Burn RAM token fee",
                 /*deferred=*/true
