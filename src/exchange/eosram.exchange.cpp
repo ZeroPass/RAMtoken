@@ -438,7 +438,7 @@ void exchange::make_sell_order(order_id_t order_id, name seller, const asset& va
 
 void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool exec_on_expire)
 {
-    DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!")
+    DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!");
     auto order_expire_time = get_order_expiration_time(ttl);
     book.emplace_order(order_id, trader, value, order_expire_time, exec_on_expire);
 
@@ -597,7 +597,7 @@ void exchange::on_transfer(name from, name to, asset quantity, std::string memo)
 void exchange::on_payment_received(name from, asset quantity, std::string memo)
 {
     LOG_DEBUG("eosram.exchange: received payment from: \"%\" amount: \"%\" memo: \"%\"",
-        from, quantity, memo);
+        from, quantity, memo.c_str());
 
     // Disregard payments which are not in EOS or RAM currency
     if(quantity.symbol != EOS_SYMBOL &&
