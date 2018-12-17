@@ -96,11 +96,11 @@ void exchange::buy(name buyer, asset quantity, ttl_t ttl, bool force_buy)
     require_auth(buyer);
     eosio_assert(buyer != _self, "Contract account cannot buy!");
     eosio_assert(ttl_valid(ttl), "Invalid ttl!");
-    eosio_assert(!is_ote_order(ttl) || force_buy, "OTE order shoud have force_buy = True!");
+    eosio_assert(!is_ote_order(ttl) || force_buy, "OTE order should have force_buy = True!");
 
     // Verifying asset (must be valid EOS token)
     asset_assert(quantity, EOS_SYMBOL, "The value must be in EOS.");
-    eosio_assert(quantity.amount > 0 , "EOS quaninty must be positive.");
+    eosio_assert(quantity.amount > 0 , "EOS quantity must be positive.");
 
     // Transfer EOS token to contract account and execute buy order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_buy).to_string();
@@ -119,7 +119,7 @@ void exchange::sell(name seller, asset quantity, ttl_t ttl, bool force_sell)
 
     // Verifying asset (must be valid RAM token)
     asset_assert(quantity, RAM_SYMBOL, "The value must be in RAM.");
-    eosio_assert(quantity.amount > 0 , "RAM quaninty must be positive.");
+    eosio_assert(quantity.amount > 0 , "RAM quantity must be positive.");
 
     // Transfer RAM token to contract account and execute sell order
     std::string memo_cmd = memo_cmd_make_order(ttl, force_sell).to_string();
@@ -322,7 +322,7 @@ void exchange::deduct_fee_and_transfer_to(name recipient, const asset& amount, L
 
 void exchange::make_transfer_to(name recipient, const asset& amount, std::string memo, bool deferred)
 {
-    // Token transfer fee applys only if recipient is not already
+    // Token transfer fee applies only if recipient is not already
     // an owner of token he's about to receive.
     auto ext_amount = to_token(amount);
     if(!is_account_owner_of(recipient, ext_amount.get_extended_symbol()))
