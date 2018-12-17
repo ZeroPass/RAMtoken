@@ -88,7 +88,7 @@ namespace eosram {
     {
         if(order.value.amount > 0LL)
         {
-            book.modify(order, order.trader);
+            book.modify(order, eosio::same_payer);
             return false;
         }
 
