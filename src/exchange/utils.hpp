@@ -50,9 +50,9 @@ namespace eosram {
         eosio::action ta;
         ta.account = amount.contract;
         ta.name = "transfer"_n;
-        ta.authorization.emplace_back(from, k_active);
+        ta.authorization.push_back(std::move(perm));
         ta.data = [&]{
-            if(proxy) 
+            if(proxy)
             {
                 memo = gen_proxy_memo(to, std::move(memo));
                 to = proxy;
