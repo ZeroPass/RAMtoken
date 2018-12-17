@@ -272,10 +272,10 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
     * paied by exchange.
     *
     * We don't do this check for EOS token since eosio.token contract does not support open token action.
-    * We then assume here, that make_transfer function will deduce appropriate amount of transfer fee
-    * from the traded amount after the trade has been executed. Also proxy or make_transfer
+    * We then assume here, that make_transfer_to function will deduce appropriate amount of transfer fee
+    * from the traded amount after the trade has been executed. Also proxy or make_transfer_to
     * function should reserve/buy accurate amount of ram for the transfer of EOS token.
-    * This is charged to this exchange account and paied by deduced fee.
+    * This is charged to this exchange's account and paid by deduced fee.
     */
     if(is_buy_order(order) && // Buying ram token?
        !is_account_owner_of(order.trader, ram_symbol()))
@@ -283,7 +283,7 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
         auto da = deduct_fee(order.value, token_transfer_fee);
 
         /*
-        * If deduced amount is less then 1, the make_transfer function should
+        * If deduced amount is less then 1, the make_transfer_to function should
         * consume traded RAM tokens as transfer fee.
         */
         if(da.value.amount > 0)
@@ -310,10 +310,10 @@ void exchange::deduct_fee_and_transfer_to(name recipient, const asset& amount, L
     if(da.fee.amount > 0){
         transfer_token(_self, fee_recipient(), to_token(da.fee), std::move(fee_info), deferred);
     }
-    make_transfer(recipient, da.value, std::move(transfer_memo), deferred);
+    make_transfer_to(recipient, da.value, std::move(transfer_memo), deferred);
 }
 
-void exchange::make_transfer(name recipient, const asset& amount, std::string memo, bool deferred)
+void exchange::make_transfer_to(name recipient, const asset& amount, std::string memo, bool deferred)
 {
     // Token transfer fee applys only if recipient is not already
     // an owner of token he's about to receive.
@@ -448,7 +448,7 @@ void exchange::execute_memo_cmd(const memo_cmd_cancel_order& cmd, name account, 
 {
     // Tranfer any value back to sender
     if(value.amount > 0) {
-        make_transfer(account, value, "Returning excess amount"s);
+        make_transfer_to(account, value, "Returning excess amount"s);
     }
     cancelbytxid(cmd.txid());
 }
@@ -510,7 +510,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
     else if(!order.convert_on_expire)
     {
         LOG_DEBUG("Returning remaining order's funds back to order issuer");
-        make_transfer(order.trader, order.value, std::move(reason));
+        make_transfer_to(order.trader, order.value, std::move(reason));
     }
 }
 
@@ -740,7 +740,7 @@ void exchange::clrorders(const symbol& sym, std::string reason)
     auto it = book.begin();
     while(it != book.end() && limit --> 0)
     {
-        make_transfer(it->trader, it->value, std::move(reason));
+        make_transfer_to(it->trader, it->value, std::move(reason));
         it = book.erase(it);
     }
 
