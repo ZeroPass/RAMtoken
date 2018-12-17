@@ -139,16 +139,23 @@ void exchange::cancel(order_id_t order_id)
     auto order = order_book.get(order_id);
     require_auth(order.trader);
 
-    // Cancel order and return funds
-    order.expiration_time   = now();
-    order.convert_on_expire = false;
+    /* Deduce fee */
+    auto da = deduct_fee(order.value, [&](const auto& amount) {
+        asset fee = cancel_order_fee(amount);
+        if(has_order_expired(order)) {
+            fee.amount = 0;
+        }
+        return fee;
+    });
 
-    auto da = deduct_fee(order.value, cancel_order_fee);
     order.value = da.value;
-
     if(da.fee.amount > 0) {
         transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Cancel order fee"s);
     }
+
+    // Cancel order and return funds
+    order.convert_on_expire = has_order_expired(order) ? order.convert_on_expire : false;
+    order.expiration_time   = now();
 
     stop_ttl_timer(order_id);
     handle_expired_order(order_book, std::move(order), "Order was canceled"s);
