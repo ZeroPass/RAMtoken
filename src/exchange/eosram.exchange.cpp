@@ -29,9 +29,9 @@ void exchange::start_ttl_timer(order_id_t order_id, ttl_t ttl, name actor, std::
     if(!ttl_infinite(ttl) && !is_ote_order(ttl))
     {
         order_timer t(order_id);
-        t.set_permission(actor, k_active);
+        t.set_permission(get_action_executor(actor), k_active);
         t.set_callback(get_self(), k_order_expired, order_id, std::move(reason));
-        t.start(ttl, actor);
+        t.start(ttl, get_ram_payer(actor));
     }
 }
 
@@ -190,9 +190,9 @@ void exchange::execute_order(order_id_t order_id)
         else if(sell_book.top() != sell_book.end())
         {
             order_timer t(buy_order.id);
-            t.set_permission(buy_order.trader, k_active);
-            t.set_callback(get_self(), k_execute_order, buy_order.id);
-            t.start(order_execution_delay, buy_order.trader);
+            t.set_permission(get_action_executor(buy_order.trader), k_active);
+            t.set_callback(_self, k_execute_order, buy_order.id);
+            t.start(order_execution_delay, get_ram_payer(buy_order.trader));
         }
         else if(is_ote_order(buy_order)) {
             handle_expired_order(buy_book, std::move(buy_order), ""s);
@@ -299,10 +299,10 @@ bool exchange::preflight_check(ds::order_book& book, ds::order_t&& order)
             rm.buyram(_self, _self, da.fee);
 
             auto fee = to_token(rm.convert_to_ram(da.fee));
-            open_token_balance(order.trader, fee, false);
+            open_token_balance(order.trader, fee, /*burn_token=*/false);
 
             order.value.amount = da.value.amount;
-            book.modify(order, order.trader);
+            book.modify(order, get_ram_payer(order.trader));
             return false;
         }
     }
@@ -337,12 +337,12 @@ void exchange::make_transfer_to(name recipient, const asset& amount, std::string
         {
             // We consume transferred amount as fee since it's not enough
             // to open a token balance account for the recipient.
-            transfer_token(get_self(), fee_recipient(), to_token(da.fee), "Token transfer fee", deferred);
+            transfer_token(_self, fee_recipient(), to_token(da.fee), "Token transfer fee", deferred);
         }
     }
 
     if(ext_amount.quantity.amount > 0) {
-        transfer_token(get_self(), recipient, ext_amount, std::move(memo), deferred);
+        transfer_token(_self, recipient, ext_amount, std::move(memo), deferred);
     }
 }
 
@@ -405,8 +405,8 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, co
     // Generate order id from current txid
     order_id_t order_id = get_order_id(get_txid());
 
-    // Insert and execute order
-    dispatch_inline(_self, k_insorderexec, {{ _self, k_active }, { account, k_active }},
+    // Insert and execute order (Remove account's auth and change action type to normal)
+    dispatch_inline(_self, k_insorderexec, {{ _self, k_active } /*, { account, k_active }*/},
         std::make_tuple(order_id, account, value, cmd.ttl(), cmd.convert_on_expire())
     );
 }
@@ -414,7 +414,7 @@ void exchange::execute_memo_cmd(const memo_cmd_make_order& cmd, name account, co
 void exchange::insert_and_execute_order(order_id_t order_id, name trader, const asset& value, ttl_t ttl, bool convert_on_expire)
 {
     require_auth(_self);
-    DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader's account!");
+    //DEBUG_ASSERT(has_auth(trader), "insert_and_execute_order: Missing required authority for trader's account!");
 
     if(value.symbol == EOS_SYMBOL) {
         make_buy_order(order_id, trader, value, ttl, convert_on_expire);
@@ -501,7 +501,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             LOG_DEBUG("Selling RAM token to system contract");
 
             // Buy RAM from rammarket and transfer token;
-            rm.sellrambytes(get_self(), order.value.amount);
+            rm.sellrambytes(_self, order.value.amount);
 
             // Reduce issued RAM token supply
             burn_ram_token(order.value);
@@ -509,7 +509,7 @@ void exchange::handle_expired_order(order_book& book, order_t order, std::string
             pending_trfx_queue_t pending_trfx_reips(_self);
             pending_trfx_reips.push(order.trader,
                 gen_trade_memo(order.value, price),
-                order.trader
+                get_ram_payer(order.trader)
             );
         }
     }
@@ -632,7 +632,7 @@ void exchange::on_order_expired(order_id_t order_id, std::string reason)
     auto& order_book = get_order_book_of(order_id, "on_order_expired: Order does not exists!");
     auto order = order_book.get(order_id);
 
-    require_auth(order.trader);
+    eosio_assert(has_auth(order.trader) || has_auth(_self), "Missing required authority");
     handle_expired_order(order_book, std::move(order), std::move(reason));
 }
 
