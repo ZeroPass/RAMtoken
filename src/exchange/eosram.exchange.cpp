@@ -440,7 +440,7 @@ void exchange::make_order_and_execute(ds::order_book& book, order_id_t order_id,
 {
     DEBUG_ASSERT(has_auth(_self), "make_order_and_execute:  Missing required authority for owner's account!");
     auto order_expire_time = get_order_expiration_time(ttl);
-    book.emplace_order(order_id, trader, value, order_expire_time, exec_on_expire);
+    book.emplace_order(get_ram_payer(trader), order_id, trader, value, order_expire_time, exec_on_expire);
 
     DEBUG_ASSERT(order_exists(order_id), "make_sell_order: failed to insert order into order book!");
     LOG_DEBUG("New order was inserted into order book. order_id=%", order_id);

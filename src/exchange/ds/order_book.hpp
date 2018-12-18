@@ -99,7 +99,7 @@ namespace eosram::ds {
         }
 
         /** Makes new order entry at the back of the book */
-        void emplace_order(order_id_t order_id, eosio::name trader, const asset& value, uint32_t expiration_time, bool force_trade)
+        void emplace_order(eosio::name ram_payer, order_id_t order_id, eosio::name trader, const asset& value, uint32_t expiration_time, bool force_trade)
         {
             order_t order;
             order.id                = order_id;
@@ -109,7 +109,7 @@ namespace eosram::ds {
             order.convert_on_expire = force_trade;
 
             // Push order to the back of the queue
-            this->push(std::move(order), /*payer=*/trader);
+            this->push(std::move(order), ram_payer);
         }
     };
 
