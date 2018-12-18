@@ -701,6 +701,16 @@ void exchange::require_admin() const
     require_auth({ _self, k_admin });
 }
 
+name exchange::get_ram_payer(name executor, bool is_notify_action) const
+{
+    return !is_notify_action && has_auth(executor) ? executor : _self;
+}
+
+name exchange::get_action_executor(name executor, bool is_notify_action) const
+{
+    return !is_notify_action && has_auth(executor) ? executor : _self;
+}
+
 void exchange::start()
 {
     require_admin();
