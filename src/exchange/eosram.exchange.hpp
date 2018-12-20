@@ -105,8 +105,8 @@ namespace eosram {
         // authorization
         void require_owner() const;
         void require_admin() const;
-        name get_ram_payer(name executor, bool is_notify_action = false) const;
-        name get_action_executor(name executor, bool is_notify_action = false) const;
+        name get_ram_payer(name action_actor, bool is_notify_action = false) const;
+        name get_action_executor(name action_actor, bool is_notify_action = false) const;
 
         // exchange state
         bool is_running() const;

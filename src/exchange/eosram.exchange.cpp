@@ -701,14 +701,14 @@ void exchange::require_admin() const
     require_auth({ _self, k_admin });
 }
 
-name exchange::get_ram_payer(name executor, bool is_notify_action) const
+name exchange::get_ram_payer(name action_actor, bool is_notify_action) const
 {
-    return !is_notify_action && has_auth(executor) ? executor : _self;
+    return !is_notify_action && has_auth(action_actor) ? action_actor : _self;
 }
 
-name exchange::get_action_executor(name executor, bool is_notify_action) const
+name exchange::get_action_executor(name action_actor, bool is_notify_action) const
 {
-    return !is_notify_action && has_auth(executor) ? executor : _self;
+    return !is_notify_action && has_auth(action_actor) ? action_actor : _self;
 }
 
 void exchange::start()
