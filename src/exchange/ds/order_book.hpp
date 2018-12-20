@@ -18,17 +18,17 @@ namespace eosram::ds {
         asset value;
         eosio::name trader;
         uint32_t expiration_time;
-        bool convert_on_expire;  // if true, when order expires the RAM token will be issued (or burned) instead of exchanged and 
+        bool convert_on_expire;  // if true, when order expires the RAM token will be issued (or burned) instead of exchanged and
                                  // equal amount of RAM will be bought/sold on rammarket.
 
         order_t() = default;
         order_t(order_id_t oid, asset v, eosio::name t, uint32_t etime, bool exe_on_expire) :
             id(oid), value(v), trader(t),
-            expiration_time(etime), 
+            expiration_time(etime),
             convert_on_expire(exe_on_expire)
         {}
 
-        constexpr bool operator == (const order_t& o) const { 
+        constexpr bool operator == (const order_t& o) const {
             return trader == o.trader && value == o.value;
         }
 
@@ -99,7 +99,7 @@ namespace eosram::ds {
         }
 
         /** Makes new order entry at the back of the book */
-        void emplace_order(order_id_t order_id, eosio::name trader, const asset& value, uint32_t expiration_time, bool force_trade)
+        void emplace_order(eosio::name ram_payer, order_id_t order_id, eosio::name trader, const asset& value, uint32_t expiration_time, bool force_trade)
         {
             order_t order;
             order.id                = order_id;
@@ -109,7 +109,7 @@ namespace eosram::ds {
             order.convert_on_expire = force_trade;
 
             // Push order to the back of the queue
-            this->push(std::move(order), /*payer=*/trader);
+            this->push(std::move(order), ram_payer);
         }
     };
 
@@ -119,7 +119,7 @@ namespace eosram::ds {
             order_book(owner, get_scope())
         {}
 
-        static uint64_t get_scope() 
+        static uint64_t get_scope()
         {
             return EOS_TOKEN_CONTRACT.value;
         }
@@ -131,7 +131,7 @@ namespace eosram::ds {
             order_book(owner, get_scope())
         {}
 
-        static uint64_t get_scope() 
+        static uint64_t get_scope()
         {
             return RAM_TOKEN_CONTRACT.value;
         }
